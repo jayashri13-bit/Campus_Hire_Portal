@@ -77,12 +77,13 @@ def on_startup():
 
 @app.get("/")
 def health_check():
+    db_provider = "Neon Cloud" if "neon.tech" in PG_URL else ("Local PostgreSQL" if active_db_type == "postgresql" else "SQLite")
     return {
         "status": "online",
         "service": "Campus Hire Python API",
         "database": {
             "mode": active_db_type,
-            "url": PG_URL if active_db_type == "postgresql" else SQLITE_URL
+            "provider": db_provider
         },
         "docs_url": "http://127.0.0.1:8000/docs",
         "features": {

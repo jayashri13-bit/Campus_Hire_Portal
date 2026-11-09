@@ -5,26 +5,47 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
 
-# PostgreSQL / Database connection configuration
-# If DATABASE_URL is set in environment or default PostgreSQL is running, use it.
-# Otherwise, fall back cleanly to SQLite so the application works out-of-the-box.
-PG_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/campushire_db")
-SQLITE_URL = "sqlite:///./campushire.db"
+# Auto-load .env or .env.local if present
+env_candidates = [
+    os.path.join(os.path.dirname(__file__), ".env"),
+    os.path.join(os.path.dirname(__file__), ".env.local"),
+    os.path.join(os.path.dirname(__file__), "..", ".env"),
+    os.path.join(os.path.dirname(__file__), "..", ".env.local"),
+]
+for p in env_candidates:
+    if os.path.exists(p):
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+        except Exception:
+            pass
 
+# PostgreSQL / Neon Database connection configuration
+PG_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/campushire_db")
+if PG_URL.startswith("postgres://"):
+    PG_URL = PG_URL.replace("postgres://", "postgresql://", 1)
+
+SQLITE_URL = "sqlite:///./campushire.db"
 active_db_type = "postgresql"
 
 try:
-    # Attempt to test connection to PostgreSQL
-    test_engine = create_engine(PG_URL, connect_args={"connect_timeout": 3})
+    test_engine = create_engine(PG_URL, connect_args={"connect_timeout": 5})
     with test_engine.connect() as conn:
         pass
     engine = test_engine
-    print(f"[*] Successfully connected to PostgreSQL: {PG_URL}")
+    is_neon = "neon.tech" in PG_URL
+    print(f"[*] Successfully connected to {'Neon Cloud' if is_neon else 'PostgreSQL'} database.")
 except Exception as e:
-    # Fallback to local SQLite file database
     active_db_type = "sqlite"
     engine = create_engine(SQLITE_URL, connect_args={"check_same_thread": False})
-    print(f"[*] PostgreSQL not currently running ({e}). Falling back smoothly to SQLite: {SQLITE_URL}")
+    print(f"[*] PostgreSQL/Neon connection fallback to SQLite: {e}")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
