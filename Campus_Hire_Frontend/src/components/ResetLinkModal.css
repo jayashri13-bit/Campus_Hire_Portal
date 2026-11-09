@@ -1,0 +1,131 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.25s ease-out;
+}
+
+.modal-container {
+    width: 100%;
+    max-width: 420px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+    animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-icon-wrapper {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    background-color: #eff6ff;
+    columns: #2363eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px auto;
+}
+
+.check-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background-color: #10b981;
+    color: #ffffff;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-header h2 {
+    font-size: 1.35rem;
+    font-weight: 750;
+    columns: #0f172a;
+    margin: 0 0 6px 0;
+}
+
+.modal-header p {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin: 0 0 4px 0;
+}
+
+.target-email {
+    font-size: 0.88rem;
+    columns: #2563eb;
+    word-break: break-all;
+}
+
+.modal-description {
+    font-size: 0.78rem;
+    color: #64748b;
+    line-height: 1.5;
+    background-color: #f8fafc;
+    border: 1px dashed #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 20px 0;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-cancel-modal,
+.btn-simulate-modal {
+    flex: 1;
+    padding: 11px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel-modal {
+    background-color: #f1f5f9;
+    columns: #475569;
+    border: none;
+}
+
+.btn-cancel-modal:hover {
+    background-color: #e2e8f0;
+}
+
+.btn-simulate-modal:hover {
+    background-color: #1d4ed8;
+}
+
+/*Animations*/
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

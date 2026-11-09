@@ -1,0 +1,299 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+
+:root {
+  /* Brand Palette */
+  --bg-main: #F8FAFC;
+  --bg-secondary: #F1F5F9;
+  --bg-card: #FFFFFF;
+  --primary: #2563EB;
+  --secondary: #4F46E5;
+  --accent: #06B6D4;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --muted: #94A3B8;
+  --border-color: #E2E8F0;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+  --gradient-accent: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);
+  --gradient-bg: linear-gradient(180deg, #F8FAFC 0%, #EEF5FF 100%);
+  --gradient-hero: linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #06B6D4 100%);
+
+  /* Shadows (Stripe / Vercel style) */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 8px 30px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 20px 50px rgba(15, 23, 42, 0.08);
+  --shadow-btn: 0 10px 25px rgba(37, 99, 235, 0.25);
+
+  /* Borders and radii */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: var(--gradient-bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -10%;
+  left: -10%;
+  width: 45%;
+  height: 45%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0) 70%);
+  border-radius: 50%;
+  z-index: -2;
+  pointer-events: none;
+  filter: blur(80px);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -10%;
+  right: -10%;
+  width: 55%;
+  height: 55%;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.04) 0%, rgba(79, 70, 229, 0) 70%);
+  border-radius: 50%;
+  z-index: -2;
+  pointer-events: none;
+  filter: blur(80px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+
+
+/* Universal Cards & Containers styling */
+.card,
+.metric-card,
+.dashboard-column,
+.job-card,
+.application-card,
+.stat-card,
+.notification-dropdown,
+.profile-dropdown,
+.requirements-modal,
+.change-password-modal,
+.match-column {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  /* 20px radius */
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover,
+.metric-card:hover,
+.dashboard-column:hover:not(.match-column),
+.job-card:hover,
+.application-card:hover,
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: #cbd5e1;
+}
+
+/* Primary Action Buttons */
+.btn-primary,
+.btn-confirm-apply,
+.btn-submit,
+.btn-login,
+.btn-register {
+  background: var(--gradient-primary);
+  border: none;
+  color: #ffffff;
+  border-radius: 9999px;
+  /* rounded as requested */
+  font-weight: 600;
+  box-shadow: var(--shadow-btn);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 10px 24px;
+  font-size: 0.875rem;
+}
+
+.btn-primary:hover,
+.btn-confirm-apply:hover,
+.btn-submit:hover,
+.btn-login:hover,
+.btn-register:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+}
+
+/* Secondary Actions Buttons */
+.btn-secondary,
+.btn-cancel-modal,
+.btn-apply,
+.btn-close {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--primary);
+  border-radius: 9999px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  padding: 10px 24px;
+  font-size: 0.875rem;
+}
+
+.btn-secondary:hover,
+.btn-cancel-modal:hover,
+.btn-apply:hover:not(.applied),
+.btn-close:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--muted);
+  transform: translateY(-1px);
+}
+
+/* Danger Buttons */
+.btn-danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  padding: 10px 24px;
+  font-size: 0.875rem;
+}
+
+.btn-danger:hover {
+  background-color: var(--danger);
+  color: #ffffff;
+}
+
+/* Modern inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+  border-radius: var(--radius-md);
+  /* 16px radius */
+  background-color: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 12px 16px;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+/* Reset nested inputs inside styled search box containers */
+.search-box-wrapper input,
+.search-container input,
+.search-box input,
+.filter-search input,
+.search-box-wrapper input:focus,
+.search-container input:focus,
+.search-box input:focus,
+.filter-search input:focus {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 10px 16px;
+}
+
+/* Center and fix search button icon alignment */
+.search-btn,
+.search-box-wrapper button,
+.search-container button {
+  width: 42px;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 1.5px solid var(--border-color);
+  color: var(--text-light);
+  cursor: pointer;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.search-btn:hover,
+.search-box-wrapper button:hover,
+.search-container button:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Modern tables */
+.table-responsive,
+table {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table th {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  border-bottom: 1.5px solid var(--border-color);
+  padding: 12px 16px;
+}
+
+table td {
+  border-bottom: 1px solid var(--border-color);
+  background-color: #ffffff;
+  transition: background-color 0.2s ease;
+  padding: 14px 16px;
+}
+
+table tr:hover td {
+  background-color: var(--bg-main);
+}
+
+table tr:nth-child(even) td {
+  background-color: rgba(248, 250, 252, 0.5);
+}
+
+/* Custom Status Badge */
+.status-badge,
+.badge,
+.hero-badge {
+  border-radius: 9999px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-sm);
+}
