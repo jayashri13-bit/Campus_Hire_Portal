@@ -68,12 +68,18 @@ export const getAdminStudentAnalyticsDashboard = async () => {
         const d = res.data?.data || res.data || {};
         return {
             data: {
+                // Page 1 (AdminDashboard.jsx)
                 totalActivePosts: d.activeJobs ?? 3,
                 activePostsGrowth: 12,
                 totalStudents: d.totalStudents ?? 500,
                 studentGrowth: 8,
                 totalResumeReceived: d.resumesReceived ?? 123,
-                resumeGrowth: 15
+                resumeGrowth: 15,
+                // Page 2 (StudentAnalytics.jsx)
+                placedStudents: d.placedStudents ?? 3,
+                placementRate: d.placementRate ?? 75,
+                highestPackage: d.highestPackage ?? 1000000,
+                averagePackage: d.averagePackage ?? 200000
             }
         };
     } catch {
@@ -84,7 +90,11 @@ export const getAdminStudentAnalyticsDashboard = async () => {
                 totalStudents: 500,
                 studentGrowth: 8,
                 totalResumeReceived: 123,
-                resumeGrowth: 15
+                resumeGrowth: 15,
+                placedStudents: 3,
+                placementRate: 75,
+                highestPackage: 1000000,
+                averagePackage: 200000
             }
         };
     }
@@ -355,16 +365,27 @@ export const getTopSkillsAnalytics = async () => {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         const list = res.data?.data || res.data || [];
-        if (Array.isArray(list) && list.length > 0) return { data: list };
+        if (Array.isArray(list) && list.length > 0) {
+            return {
+                data: list.map(s => ({
+                    skill: s.skill || s.name || '',
+                    count: s.percentage ?? s.count ?? s.demand ?? 50,
+                    percentage: s.percentage ?? s.count ?? s.demand ?? 50,
+                    color: s.color
+                }))
+            };
+        }
     } catch { }
 
     return {
         data: [
-            { skill: "Python", demand: 88 },
-            { skill: "React", demand: 82 },
-            { skill: "Java", demand: 75 },
-            { skill: "SQL", demand: 70 },
-            { skill: "Cloud / AWS", demand: 65 }
+            { skill: "Java", count: 62, percentage: 62, color: "#1e3a6e" },
+            { skill: "Python", count: 58, percentage: 58, color: "#3b82f6" },
+            { skill: "SQL", count: 40, percentage: 40, color: "#8b5cf6" },
+            { skill: "PHP", count: 32, percentage: 32, color: "#06b6d4" },
+            { skill: "React", count: 16, percentage: 16, color: "#f59e0b" },
+            { skill: "C++", count: 13, percentage: 13, color: "#10b981" },
+            { skill: "C", count: 8, percentage: 8, color: "#f43f5e" }
         ]
     };
 };
@@ -376,15 +397,24 @@ export const getPlacementCgpaAnalytics = async () => {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         const list = res.data?.data || res.data || [];
-        if (Array.isArray(list) && list.length > 0) return { data: list };
+        if (Array.isArray(list) && list.length > 0) {
+            return {
+                data: list.map(c => ({
+                    range: c.range || c.range_label || '',
+                    count: c.students ?? c.count ?? 10,
+                    students: c.students ?? c.count ?? 10
+                }))
+            };
+        }
     } catch { }
 
     return {
         data: [
-            { range: "9.0 - 10.0", count: 32 },
-            { range: "8.0 - 8.9", count: 48 },
-            { range: "7.0 - 7.9", count: 65 },
-            { range: "6.0 - 6.9", count: 25 }
+            { range: "<6", count: 7, students: 7 },
+            { range: "6 - 7", count: 15, students: 15 },
+            { range: "7 - 8", count: 23, students: 23 },
+            { range: "8 - 9", count: 28, students: 28 },
+            { range: "9 - 10", count: 32, students: 32 }
         ]
     };
 };
@@ -395,12 +425,19 @@ export const getDepartmentAnalytics = async () => {
         const res = await api.get("/admin/analytics/departments", {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-        const d = res.data;
-        if (d && (d.departments || d.data)) {
+        const raw = res.data?.departments || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+        if (Array.isArray(raw) && raw.length > 0) {
             return {
                 data: {
-                    totalStudents: d.totalStudents || 500,
-                    departments: d.departments || d.data
+                    totalStudents: res.data?.totalStudents || 500,
+                    departments: raw.map(d => ({
+                        department: d.label || d.department || "General",
+                        label: d.label || d.department || "General",
+                        count: d.count ?? d.students ?? 100,
+                        students: d.count ?? d.students ?? 100,
+                        percentage: d.percentage ?? 20,
+                        color: d.color
+                    }))
                 }
             };
         }
@@ -410,9 +447,11 @@ export const getDepartmentAnalytics = async () => {
         data: {
             totalStudents: 500,
             departments: [
-                { department: "Computer Science", students: 220, placed: 180 },
-                { department: "Information Technology", students: 160, placed: 130 },
-                { department: "Electronics & TC", students: 120, placed: 85 }
+                { department: "Computer Science", label: "Computer Science", count: 180, students: 180, percentage: 36, color: "#1e3a6e" },
+                { department: "Information Technology", label: "Information Technology", count: 110, students: 110, percentage: 22, color: "#6c8dd6" },
+                { department: "BCA", label: "BCA", count: 60, students: 60, percentage: 12, color: "#06b6d4" },
+                { department: "MCA", label: "MCA", count: 40, students: 40, percentage: 8, color: "#a5b4fc" },
+                { department: "Others", label: "Others", count: 110, students: 110, percentage: 22, color: "#e2e8f0" }
             ]
         }
     };
@@ -425,43 +464,69 @@ export const getAllTopPlacedStudents = async () => {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         const list = res.data?.data || res.data || [];
-        if (Array.isArray(list) && list.length > 0) return { data: list };
+        if (Array.isArray(list) && list.length > 0) {
+            return {
+                data: list.map(s => ({
+                    id: s.id,
+                    name: s.name || s.studentName,
+                    studentName: s.name || s.studentName,
+                    company: s.company || s.companyName,
+                    companyName: s.company || s.companyName,
+                    branch: s.branch || "CS",
+                    passingYear: String(s.passingYear || s.passing_year || 2026),
+                    cgpa: String(s.cgpa || "9.0"),
+                    lpa: String(s.lpa || s.packageLpa || "12"),
+                    packageLpa: String(s.lpa || s.packageLpa || "12"),
+                    skill: s.skill || s.skills || "Full Stack",
+                    skills: s.skill || s.skills || "Full Stack"
+                }))
+            };
+        }
     } catch { }
 
     return {
         data: [
             {
-                rank: 1,
+                id: 1,
                 name: "Aditi Rao",
-                initials: "AR",
-                branch: "Computer Science",
+                studentName: "Aditi Rao",
+                company: "Google",
+                companyName: "Google",
+                branch: "CS",
                 passingYear: "2026",
                 cgpa: "9.4",
                 lpa: "18.5",
+                packageLpa: "18.5",
                 skill: "Full Stack",
-                company: "Google"
+                skills: "Full Stack"
             },
             {
-                rank: 2,
+                id: 2,
                 name: "Rohan Verma",
-                initials: "RV",
-                branch: "Information Technology",
+                studentName: "Rohan Verma",
+                company: "Microsoft",
+                companyName: "Microsoft",
+                branch: "IT",
                 passingYear: "2026",
                 cgpa: "9.1",
                 lpa: "16.0",
+                packageLpa: "16.0",
                 skill: "Data Science",
-                company: "Microsoft"
+                skills: "Data Science"
             },
             {
-                rank: 3,
+                id: 3,
                 name: "Siddharth Nair",
-                initials: "SN",
-                branch: "Computer Science",
+                studentName: "Siddharth Nair",
+                company: "Amazon",
+                companyName: "Amazon",
+                branch: "CS",
                 passingYear: "2026",
                 cgpa: "8.9",
                 lpa: "14.2",
+                packageLpa: "14.2",
                 skill: "Cloud",
-                company: "Amazon"
+                skills: "Cloud"
             }
         ]
     };

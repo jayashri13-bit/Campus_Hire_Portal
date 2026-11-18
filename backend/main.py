@@ -164,7 +164,11 @@ def legacy_admin_metrics():
             "resumeGrowth": 15,
             "activeJobs": active_jobs or 3,
             "resumesReceived": resumes_count,
-            "totalDrafts": len(drafts_db)
+            "totalDrafts": len(drafts_db),
+            "placedStudents": 3,
+            "placementRate": 75,
+            "highestPackage": 1000000,
+            "averagePackage": 200000
         }
     }
 
