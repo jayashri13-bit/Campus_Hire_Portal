@@ -8,7 +8,7 @@
     font-family: 'Inter', sans-serif;
     /*Dynamic background image containing college drawings */
     background:
-        url('../../assets/placement_bg.png') no-repeat center center;
+        url('../assets/placement_bg.png') no-repeat center center;
     background-size: cover;
     background-attachment: fixed;
     padding: 40px 24px;
@@ -165,8 +165,7 @@
     flex-grow: 1;
 }
 
-.recent-placements-ledger .student-name,
-.placement-details .student-name {
+.recent-placements-ledger .student-name {
     font-weight: 600;
     color: #ffffff;
 }
@@ -271,6 +270,27 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+.login-page .btn-toggle-eye {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.login-page .btn-toggle-eye:hover {
+    color: #2563eb;
+}
+
 .form-grid-login {
     background-color: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -313,6 +333,10 @@
     font-weight: 600;
     color: #2563eb;
     cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
 }
 
 .link-span-forgot:hover {
@@ -408,6 +432,11 @@
     color: #2563eb;
     font-weight: 600;
     cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
 }
 
 .link-span-register:hover {
@@ -449,25 +478,48 @@
     }
 }
 
+@media (max-width: 480px) {
+    .login-wrapper {
+        padding: 12px 8px;
+    }
+
+    .login-card,
+    .login-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 14px;
+    }
+
+    .login-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .login-form-group {
+        gap: 6px;
+    }
+}
+
+
 /* toast notification - appears at top center of page */
-.toast-notification {
+.login-page .toast-notification {
     position: fixed;
     top: 24px;
+    bottom: auto ;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(16, 185, 129, 0.25);
+    background: #ffffff;
+    border: 1.5px solid #10b981;
     border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    padding: 16px 24px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.2);
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 9999;
-    min-width: 320px;
-    max-width: 420px;
+    z-index: 99999;
+    min-width: 300px;
+    max-width: 440px;
+    height: auto ;
     overflow: hidden;
     animation: slideInDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -542,4 +594,123 @@
 .login-page .bg-decorations {
     position: fixed;
     z-index: 1;
+}
+
+/* Password Strength Checklist Popover */
+.password-input-group {
+    position: relative;
+}
+
+.password-strength-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 100%;
+    max-width: 480px;
+    min-height: 130px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+    z-index: 999;
+    animation: popoverFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.strength-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.strength-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.strength-title.weak {
+    color: #ef4444;
+}
+
+.strength-title.medium {
+    color: #d97706;
+}
+
+.strength-title.strong {
+    color: #10b981;
+}
+
+.strength-meter-bars {
+    display: flex;
+    gap: 4px;
+    width: 90px;
+    height: 5px;
+}
+
+.meter-segment {
+    flex: 1;
+    height: 100%;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.meter-segment.weak {
+    background-color: #ef4444;
+}
+
+.meter-segment.medium {
+    background-color: #d97706;
+}
+
+.meter-segment.strong {
+    background-color: #10b981;
+}
+
+.strength-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.strength-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+}
+
+.strength-checklist li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+}
+
+.strength-checklist li.rule-satisfied {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.strength-checklist li svg {
+    flex-shrink: 0;
 }

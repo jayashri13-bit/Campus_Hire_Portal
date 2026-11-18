@@ -2,7 +2,7 @@
 
 
 :root {
-  /* Brand Palette */
+  /* colors */
   --bg-main: #F8FAFC;
   --bg-secondary: #F1F5F9;
   --bg-card: #FFFFFF;
@@ -17,19 +17,19 @@
   --muted: #94A3B8;
   --border-color: #E2E8F0;
 
-  /* Gradients */
+  /* gradients */
   --gradient-primary: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
   --gradient-accent: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);
   --gradient-bg: linear-gradient(180deg, #F8FAFC 0%, #EEF5FF 100%);
   --gradient-hero: linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #06B6D4 100%);
 
-  /* Shadows (Stripe / Vercel style) */
+  /* shadows */
   --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
   --shadow-md: 0 8px 30px rgba(15, 23, 42, 0.06);
   --shadow-lg: 0 20px 50px rgba(15, 23, 42, 0.08);
   --shadow-btn: 0 10px 25px rgba(37, 99, 235, 0.25);
 
-  /* Borders and radii */
+  /* radius */
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 20px;
@@ -80,7 +80,7 @@ body::after {
 
 
 
-/* Universal Cards & Containers styling */
+/* cards and containers */
 .card,
 .metric-card,
 .dashboard-column,
@@ -215,15 +215,18 @@ textarea:focus {
 .search-container input,
 .search-box input,
 .filter-search input,
+.table-search-expanded input,
 .search-box-wrapper input:focus,
 .search-container input:focus,
 .search-box input:focus,
-.filter-search input:focus {
+.filter-search input:focus,
+.table-search-expanded input:focus,
+.table-search-expanded input:focus-visible {
   border: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  padding: 10px 16px;
+  outline: none;
 }
 
 /* Center and fix search button icon alignment */
@@ -297,3 +300,98 @@ table tr:nth-child(even) td {
   text-transform: uppercase;
   box-shadow: var(--shadow-sm);
 }
+
+/* toast */
+.toast-notification,
+.sd-toast-notification,
+.admin-toast-notification {
+  height: auto;
+  max-height: max-content;
+}
+
+/* toast styles */
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #10b981;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 99999;
+  animation: toastSlideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 380px;
+}
+
+.toast-notification.error {
+  border-left-color: #ef4444;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.toast-icon {
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.toast-notification.error .toast-icon {
+  color: #ef4444;
+}
+
+@keyframes toastSlideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* mobile */
+html, #root {
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+@media (max-width: 768px) {
+  .table-responsive-wrapper,
+  .table-container,
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .toast-notification,
+  .sd-toast-notification,
+  .admin-toast-notification {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: calc(100vw - 32px);
+  }
+
+  .modal-content,
+  .requirements-modal,
+  .change-password-modal {
+    max-width: calc(100vw - 32px);
+    width: 100%;
+    margin: 16px auto;
+  }
+}
+
+

@@ -138,8 +138,8 @@
 /* Hero Left Column Text Styles */
 
 .hero-badge {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background-color: #1e3a8a;
+    border: 1px solid #3b82f6;
     color: #ffffff;
     padding: 8px 20px;
     border-radius: 9999px;
@@ -255,14 +255,14 @@
 }
 
 .btn-register {
-    background-color: #3b82f6;
+    background-color: #2563eb;
     color: #ffffff;
     border: none;
     box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
 }
 
 .btn-register:hover {
-    background-color: #2563eb;
+    background-color: #1d4ed8;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
 }
@@ -398,8 +398,7 @@
 }
 
 
-.chart-card-header .chart-title,
-.chart-title {
+.landing-page .chart-title {
     color: #ffffff;
     font-size: 15px;
     font-weight: 600;
@@ -442,20 +441,20 @@
     font-weight: 400;
 }
 
-.chart-section .chart-title {
-    color: #ffffff !important;
+.landing-page .chart-section .chart-title {
+    color: #ffffff;
     font-size: 14px;
     font-weight: 600;
 }
 
 .chart-year {
     color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: #1e3a8a;
     padding: 3px 10px;
     border-radius: 9999px;
     font-size: 11px;
     font-weight: 500;
-    font-family: 'JetBrains Mono', 'monospace';
+    font-family: 'JetBrains Mono', monospace;
 }
 
 .trend-chart {
@@ -465,21 +464,21 @@
 }
 
 .trend-chart path[stroke] {
-    stroke: var(--blue) !important;
-    stroke-width: 3px !important;
+    stroke: var(--blue);
+    stroke-width: 3px;
     stroke-linecap: round;
     stroke-linejoin: round;
     filter: drop-shadow(0 0 8px rgba(99, 168, 255, 0.45));
 }
 
 #chartGradient stop:first-child {
-    stop-color: var(--blue) !important;
-    stop-opacity: 0.3 !important;
+    stop-color: var(--blue);
+    stop-opacity: 0.3;
 }
 
 #chartGradient stop:last-child {
-    stop-color: var(--blue) !important;
-    stop-opacity: 0.0 !important;
+    stop-color: var(--blue);
+    stop-opacity: 0.0;
 }
 
 
@@ -717,19 +716,19 @@
 }
 
 .stat-icon-wrapper .stat-icon {
-    width: 18px !important;
-    height: 18px !important;
+    width: 18px;
+    height: 18px;
 }
 
 .stat-icon-wrapper.gray-theme {
     background-color: #eef2f9;
-    color: #64748b;
+    color: #475569;
 }
 
 
 .stat-icon-wrapper.blue-theme {
     background-color: #eff6ff;
-    color: #3b82f6;
+    color: #2563eb;
 }
 
 
@@ -925,8 +924,8 @@
 }
 
 .about-badge {
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background-color: #1e3a8a;
+    border: 1px solid #3b82f6;
     color: #93c5fd;
     padding: 4px 12px;
     border-radius: 9999px;
@@ -1106,14 +1105,14 @@
 }
 
 .btn-sign-in {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: #304a93;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid #566ba7;
 }
 
 .btn-sign-in:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.35);
+    background-color: #395298;
+    border-color: #6a7eb5;
     transform: translateY(-1px);
 }
 

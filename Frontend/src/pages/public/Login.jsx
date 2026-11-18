@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import { motion, easeOut } from 'framer-motion';
+
+import { useState, useEffect, useRef } from 'react';
 import './Login.css';
-import { apiLogin, apiForgotPassword, apiResetPassword } from '../../api/authApi';
+import { loginAdmin, loginStudent, forgotPassword, resetPassword, saveAuthToken } from '../../auth/authService';
 import {
     GraduationCap,
     ArrowLeft,
@@ -14,8 +16,62 @@ import {
     Building2,
     TrendingUp,
     CheckCircle2,
-    XCircle
+    XCircle,
+    Circle
 } from 'lucide-react';
+
+/** Cleans and sanitizes user input strings before storing or displaying. */
+function sanitizeStorageString(val) {
+    if (val === null || val === undefined) return '';
+    let str = String(val);
+    try {
+        if (str.includes('%')) {
+            str = decodeURIComponent(str);
+        }
+    } catch {
+        // Fallback
+    }
+    const doc = typeof DOMParser !== 'undefined' ? new DOMParser().parseFromString(str, 'text/html') : null;
+    const cleanText = doc ? (doc.body.textContent || '') : str;
+    const cleanStr = cleanText.replace(/[<>'"]/g, '').trim();
+    return cleanStr;
+}
+
+/** Parses and sanitizes claims from a JWT token payload. */
+function parseTokenPayload(tokenStr) {
+    if (!tokenStr) return {};
+    try {
+        const parts = String(tokenStr).split('.');
+        if (parts.length < 2) return {};
+        const rawPayload = JSON.parse(atob(parts[1]));
+        if (rawPayload && typeof rawPayload === 'object') {
+            return {
+                fullName: sanitizeStorageString(rawPayload.fullName || rawPayload.name || rawPayload.studentName || rawPayload.adminName),
+                email: sanitizeStorageString(rawPayload.email).toLowerCase(),
+                role: sanitizeStorageString(rawPayload.role)
+            };
+        }
+    } catch {
+        return {};
+    }
+    return {};
+}
+
+/** Safely retrieves and decodes a string from storage. */
+function getStorageString(val) {
+    if (val === null || val === undefined) return '';
+    let str = String(val);
+    while (str.includes('%')) {
+        try {
+            const decoded = decodeURIComponent(str);
+            if (decoded === str) break;
+            str = decoded;
+        } catch {
+            break;
+        }
+    }
+    return str;
+}
 
 function Login({ onNavigate, initialView }) {
     //View controller state: login | forgot | reset
@@ -34,39 +90,114 @@ function Login({ onNavigate, initialView }) {
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState('success');
 
-    //Form input state tracking with Remember Me persistence
+    //Form input state tracking
     const [formData, setFormData] = useState(() => {
         const params = new URLSearchParams(window.location.search);
-        const savedRemember = localStorage.getItem("remember_me") === "true";
-        const savedEmail = savedRemember ? (localStorage.getItem("remembered_email") || '') : '';
+        const rawEmail = params.get('email') || '';
+        let initialEmail = getStorageString(rawEmail).replace(/<[^>]*>?/g, '').replace(/[<>'"]/g, '').trim();
+
+        if (!initialEmail) {
+            const storedResetEmail = localStorage.getItem('allowed_reset_email');
+            if (storedResetEmail) {
+                initialEmail = getStorageString(storedResetEmail).trim();
+            }
+        }
+        let initialPass = '';
+        if (initialEmail && initialView !== 'reset') {
+            const rawReg = localStorage.getItem('registered_profiles');
+            if (rawReg) {
+                try {
+                    const parsed = JSON.parse(rawReg);
+                    if (Array.isArray(parsed)) {
+                        const found = parsed.find(p => getStorageString(p.email).toLowerCase() === initialEmail.toLowerCase());
+                        if (found && found.password) {
+                            initialPass = getStorageString(found.password);
+                        }
+                    }
+                } catch {
+                    initialPass = '';
+                }
+            }
+        }
+
         return {
-            email: params.get('email') || savedEmail,
-            password: '',
+            email: initialEmail,
+            password: initialPass,
             confirmPassword: '',
-            rememberMe: savedRemember
+            rememberMe: false
         };
     });
 
-    //Handles values change in inputs with automatic password autofill for registered users/admins
+    // Password strength card popover state & ref
+    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+    const passwordWrapperRef = useRef(null);
+
+    // Password validation rules & real-time strength scoring
+    const currentPassword = formData?.password || "";
+    const pwdRules = {
+        length: currentPassword.length >= 8,
+        hasUpperLower: /[a-z]/.test(currentPassword) && /[A-Z]/.test(currentPassword),
+        hasNumber: /\d/.test(currentPassword),
+        hasSymbol: /[!@#$%^&*(),.?":{}|<>]/.test(currentPassword)
+    };
+    const pwdScore = Object.values(pwdRules).filter(Boolean).length;
+
+    let strengthLabel = "Weak password";
+    let strengthTheme = "weak";
+    if (pwdScore >= 4) {
+        strengthLabel = "Strong password";
+        strengthTheme = "strong";
+    } else if (pwdScore >= 2) {
+        strengthLabel = "Medium password";
+        strengthTheme = "medium";
+    }
+
+    // Click away to close password strength popover
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (passwordWrapperRef.current && !passwordWrapperRef.current.contains(event.target)) {
+                setIsPasswordFocused(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Sync loginView with initialView prop or URL location
+    useEffect(() => {
+        if (initialView) {
+            setLoginView(initialView);
+        } else if (window.location.pathname.startsWith('/reset-password') || window.location.search.includes('token=')) {
+            setLoginView('reset');
+        }
+    }, [initialView]);
+
+    //Handles values change in inputs with dynamic stored password lookup
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-
         if (name === 'email') {
-            const emailClean = value.trim().toLowerCase();
-            const savedCreds = JSON.parse(localStorage.getItem("saved_credentials") || "{}");
-            const registeredProfiles = JSON.parse(localStorage.getItem("registered_profiles") || "[]");
-            
-            const matchedProfile = registeredProfiles.find(p => p.email && p.email.trim().toLowerCase() === emailClean);
-            let foundPassword = savedCreds[emailClean] || matchedProfile?.password;
-            if (emailClean === 'saurabh@gmail.com' && !foundPassword) {
-                foundPassword = 'Saurabh@123';
-            }
+            const trimmed = getStorageString(value).trim().toLowerCase();
+            let autoPass = '';
+            if (trimmed !== '') {
+                const registeredProfiles = JSON.parse(localStorage.getItem('registered_profiles') || '[]');
+                const matchedProfile = registeredProfiles.find(p => getStorageString(p.email).toLowerCase() === trimmed);
 
+                const adminProfiles = JSON.parse(localStorage.getItem('admin_profiles') || '[]');
+                const matchedAdmin = adminProfiles.find(p => getStorageString(p.email).toLowerCase() === trimmed);
+
+                if (matchedProfile?.password) {
+                    autoPass = getStorageString(matchedProfile.password);
+                } else if (matchedAdmin?.password) {
+                    autoPass = getStorageString(matchedAdmin.password);
+                }
+            }
             setFormData(prev => ({
                 ...prev,
                 email: value,
-                password: foundPassword || prev.password,
-                confirmPassword: foundPassword || prev.confirmPassword
+                password: autoPass,
+                confirmPassword: autoPass
             }));
         } else {
             setFormData(prev => ({
@@ -77,223 +208,284 @@ function Login({ onNavigate, initialView }) {
     };
 
 
+
+    const saveAdminProfile = (email, password, payload = {}) => {
+        const sanitizedName = sanitizeStorageString(payload.fullName || payload.name || payload.adminName || "Admin");
+        const sanitizedEmail = sanitizeStorageString(payload.email || email).toLowerCase();
+        const rawPassword = getStorageString(password);
+        localStorage.setItem("admin_user", JSON.stringify({
+            fullName: sanitizedName,
+            email: sanitizedEmail,
+            role: 'System Administrator'
+        }));
+        const rawProfiles = localStorage.getItem('admin_profiles');
+        let adminProfiles = [];
+        if (rawProfiles) {
+            try {
+                const parsed = JSON.parse(rawProfiles);
+                if (Array.isArray(parsed)) adminProfiles = parsed;
+            } catch {
+                adminProfiles = [];
+            }
+        }
+        let found = false;
+        const updated = adminProfiles.map(p => {
+            const pEmail = getStorageString(p.email).toLowerCase();
+            if (pEmail === getStorageString(sanitizedEmail).toLowerCase()) {
+                found = true;
+                return { ...p, email: sanitizedEmail, password: rawPassword };
+            }
+            return { ...p, email: getStorageString(pEmail), password: getStorageString(p.password) };
+        });
+        if (!found && sanitizedEmail) updated.push({ email: sanitizedEmail, password: rawPassword });
+        localStorage.setItem('admin_profiles', JSON.stringify(updated));
+    };
+
+    const saveStudentProfile = (email, payload = {}) => {
+        const cleanEmail = sanitizeStorageString(email).toLowerCase();
+        const nameFromEmail = cleanEmail.split('@')[0] || 'student';
+        const fallbackName = nameFromEmail.replace(/\d/g, '').charAt(0).toUpperCase() + nameFromEmail.replace(/\d/g, '').slice(1);
+
+        const rawReg = localStorage.getItem("registered_profiles");
+        let registeredProfiles = [];
+        if (rawReg) {
+            try {
+                const parsed = JSON.parse(rawReg);
+                if (Array.isArray(parsed)) registeredProfiles = parsed;
+            } catch {
+                registeredProfiles = [];
+            }
+        }
+        const matchedProfile = registeredProfiles.find(p => getStorageString(p.email).toLowerCase() === cleanEmail);
+
+        const avatarKey = cleanEmail ? `student_avatar_${cleanEmail}` : 'student_avatar';
+        const savedAvatar = localStorage.getItem(avatarKey) || localStorage.getItem('student_avatar') || "";
+
+        if (matchedProfile) {
+            const sanitizedUser = {
+                fullName: sanitizeStorageString(matchedProfile.fullName),
+                email: sanitizeStorageString(matchedProfile.email).toLowerCase(),
+                phone: sanitizeStorageString(matchedProfile.phone),
+                branch: sanitizeStorageString(matchedProfile.branch),
+                passingYear: sanitizeStorageString(matchedProfile.passingYear),
+                cgpa: sanitizeStorageString(matchedProfile.cgpa),
+                skills: sanitizeStorageString(matchedProfile.skills),
+                linkedinUrl: sanitizeStorageString(matchedProfile.linkedinUrl),
+                githubUrl: sanitizeStorageString(matchedProfile.githubUrl),
+                avatarUrl: matchedProfile.avatarUrl || savedAvatar
+            };
+            localStorage.setItem("user", JSON.stringify(sanitizedUser));
+        } else {
+            localStorage.setItem("user", JSON.stringify({
+                fullName: sanitizeStorageString(payload.fullName || payload.name || payload.studentName || fallbackName),
+                email: cleanEmail,
+                avatarUrl: savedAvatar
+            }));
+        }
+    };
+
+    const showToastMessage = (msg, type, timeout, callback) => {
+        setToastMessage(msg);
+        setToastType(type);
+        setShowToast(true);
+        setTimeout(() => {
+            setShowToast(false);
+            if (callback) callback();
+        }, timeout);
+    };
+
+    const handleLoginSubmit = async () => {
+        try {
+            const emailLower = formData.email.trim().toLowerCase();
+            const isAdmin = emailLower === 'saurabh@gmail.com' || emailLower.startsWith('admin') || emailLower.includes('@admin.') || emailLower.includes('.admin');
+
+            const apiCall = isAdmin ? loginAdmin : loginStudent;
+            const response = await apiCall({
+                email: formData.email.trim(),
+                password: getStorageString(formData.password),
+                ...(isAdmin && { rememberMe: formData.rememberMe })
+            });
+
+
+            if (response.data?.token) {
+                saveAuthToken(response.data.token);
+                localStorage.setItem("role", sanitizeStorageString(isAdmin ? "admin" : "student"));
+
+                const payload = parseTokenPayload(response.data.token);
+
+                if (isAdmin) saveAdminProfile(formData.email, formData.password, payload);
+                else saveStudentProfile(formData.email, payload);
+
+                showToastMessage("Login successful!", 'success', 1500, () => {
+                    onNavigate(isAdmin ? 'admin' : 'student');
+                });
+            } else {
+                throw new Error(response.data?.message || "Invalid credentials or unregistered user.");
+            }
+        } catch (error) {
+            console.error("Login Error:", error);
+            showToastMessage(error.response?.data?.message || "Invalid email or password", 'error', 3000);
+        }
+    };
+
+    const handleForgotSubmit = async () => {
+        const cleanEmail = getStorageString(formData.email).trim();
+        if (!cleanEmail) {
+            showToastMessage("Please enter your registered email address.", 'error', 3000);
+            return;
+        }
+
+        try {
+            await forgotPassword(cleanEmail);
+            localStorage.setItem('allowed_reset_email', sanitizeStorageString(cleanEmail).toLowerCase());
+        } catch (error) {
+            console.error("Forgot Password Error:", error);
+            localStorage.setItem('allowed_reset_email', sanitizeStorageString(cleanEmail).toLowerCase());
+        } finally {
+            showToastMessage("Password reset link sent to your email!", 'success', 3500, () => setLoginView('login'));
+        }
+    };
+
+    const handleResetSubmit = async () => {
+        if (formData.password !== formData.confirmPassword) {
+            showToastMessage("Passwords do not match!", 'error', 3000);
+            return;
+        }
+
+        const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&^#()_+\-=]).{8,}$/;
+        if (!passwordPattern.test(formData.password)) {
+            showToastMessage("Password must be at least 8 characters and contain letters, numbers, and special characters (@$!%*?&).", 'error', 4500);
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const tokenParam = params.get('token') || '';
+        const urlEmail = params.get('email') || '';
+        const allowedEmail = localStorage.getItem('allowed_reset_email') || '';
+        let targetEmail = getStorageString(urlEmail || formData.email || allowedEmail).trim();
+
+        if (!targetEmail) {
+            const rawReg = localStorage.getItem('registered_profiles');
+            if (rawReg) {
+                try {
+                    const parsed = JSON.parse(rawReg);
+                    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].email) {
+                        targetEmail = getStorageString(parsed[0].email).trim();
+                    }
+                } catch {
+                    // Ignore
+                }
+            }
+        }
+
+        if (!targetEmail) {
+            showToastMessage("Please enter your registered email address.", 'error', 3000);
+            return;
+        }
+
+        try {
+            const newPassword = getStorageString(formData.password);
+            await resetPassword({
+                email: targetEmail,
+                token: tokenParam,
+                resetToken: tokenParam,
+                newPassword: newPassword,
+                confirmPassword: newPassword
+            });
+
+            const resetEmail = targetEmail.toLowerCase();
+            const rawProfiles = localStorage.getItem('registered_profiles');
+            let profiles = [];
+            if (rawProfiles) {
+                try {
+                    const parsed = JSON.parse(rawProfiles);
+                    if (Array.isArray(parsed)) profiles = parsed;
+                } catch {
+                    profiles = [];
+                }
+            }
+            let regFound = false;
+            const updatedReg = profiles.map(p => {
+                const pEmail = getStorageString(p.email).toLowerCase();
+                if (pEmail === resetEmail) {
+                    regFound = true;
+                    return { ...p, email: sanitizeStorageString(pEmail), password: newPassword };
+                }
+                return { ...p, email: pEmail, password: getStorageString(p.password) };
+            });
+            if (!regFound) {
+                updatedReg.push({
+                    email: resetEmail,
+                    password: newPassword
+                });
+            }
+            localStorage.setItem('registered_profiles', JSON.stringify(updatedReg));
+
+            const rawAdmins = localStorage.getItem('admin_profiles');
+            let adminProfiles = [];
+            if (rawAdmins) {
+                try {
+                    const parsed = JSON.parse(rawAdmins);
+                    if (Array.isArray(parsed)) adminProfiles = parsed;
+                } catch {
+                    adminProfiles = [];
+                }
+            }
+            let adminFound = false;
+            const updatedAdmins = adminProfiles.map(p => {
+                const pEmail = getStorageString(p.email).toLowerCase();
+                if (pEmail === resetEmail) {
+                    adminFound = true;
+                    return { ...p, email: sanitizeStorageString(pEmail), password: newPassword };
+                }
+                return { ...p, email: pEmail, password: getStorageString(p.password) };
+            });
+            if (!adminFound && (resetEmail === 'saurabh@gmail.com' || resetEmail.startsWith('admin') || resetEmail.includes('@admin.') || resetEmail.includes('.admin'))) {
+                updatedAdmins.push({ email: resetEmail, password: newPassword });
+            }
+            localStorage.setItem('admin_profiles', JSON.stringify(updatedAdmins));
+
+            const rawUser = localStorage.getItem('user');
+            if (rawUser) {
+                try {
+                    const userObj = JSON.parse(rawUser);
+                    if (userObj && getStorageString(userObj.email).toLowerCase() === resetEmail) {
+                        userObj.password = newPassword;
+                        localStorage.setItem('user', JSON.stringify(userObj));
+                    }
+                } catch {
+                    // Ignore
+                }
+            }
+
+            showToastMessage('Password reset successfully!', 'success', 2000, () => {
+                setLoginView('login');
+                if (window.history && window.history.pushState) {
+                    window.history.pushState(null, '', '/login');
+                }
+                setFormData(prev => ({
+                    ...prev,
+                    email: resetEmail,
+                    password: newPassword,
+                    confirmPassword: newPassword
+                }));
+                localStorage.removeItem('allowed_reset_email');
+            });
+        } catch (error) {
+            console.error("Reset Password Error:", error);
+            const errMsg = typeof error.response?.data === 'string'
+                ? error.response.data
+                : (error.response?.data?.message || "Failed to reset password. Please check your details and try again.");
+            showToastMessage(errMsg, 'error', 4000);
+        }
+    };
+
     //Handles Form submissions
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (loginView === 'login') {
-            const emailClean = (formData.email || '').trim().toLowerCase();
-            const isMasterAdmin = emailClean === 'saurabh@gmail.com';
-            const isAdmin = isMasterAdmin ||
-                emailClean.startsWith('admin') ||
-                emailClean.includes('@admin.') ||
-                emailClean.includes('.admin');
-
-            const enteredPass = (formData.password || '').trim();
-            const isMasterPass = enteredPass === 'Saurabh@123' || enteredPass.toLowerCase() === 'saurabh@123';
-
-            // If master admin entered password and confirm password has mismatch, synchronize them
-            if (isMasterAdmin && isMasterPass && formData.confirmPassword && formData.confirmPassword !== enteredPass) {
-                formData.confirmPassword = enteredPass;
-            }
-
-            if (formData.confirmPassword && formData.password !== formData.confirmPassword) {
-                setToastMessage("Password and Confirm Password do not match!");
-                setToastType('error');
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
-                return;
-            }
-
-            try {
-                // Call Python FastAPI login API
-                const res = await apiLogin({
-                    email: formData.email.trim(),
-                    password: formData.password,
-                    confirmPassword: formData.confirmPassword || formData.password,
-                    rememberMe: formData.rememberMe
-                });
-
-                // Handle Remember Me state in localStorage
-                if (formData.rememberMe) {
-                    localStorage.setItem("remember_me", "true");
-                    localStorage.setItem("remembered_email", formData.email.trim());
-                } else {
-                    localStorage.removeItem("remember_me");
-                    localStorage.removeItem("remembered_email");
-                }
-
-                // Save email & password to local saved_credentials for autofill
-                if (formData.email && formData.password) {
-                    const savedCreds = JSON.parse(localStorage.getItem("saved_credentials") || "{}");
-                    savedCreds[emailClean] = formData.password;
-                    localStorage.setItem("saved_credentials", JSON.stringify(savedCreds));
-                }
-
-                const assignedRole = res.role || (isAdmin ? "admin" : "student");
-                localStorage.setItem("token", res.token || `jwt-${Date.now()}`);
-                localStorage.setItem("role", assignedRole);
-                if (res.user) {
-                    localStorage.setItem("user", JSON.stringify(res.user));
-                }
-
-                setToastMessage(res.message || (isMasterAdmin ? "Login successful! Welcome Saurabh (Admin)" : "Login successful!"));
-                setToastType('success');
-                setShowToast(true);
-
-                setTimeout(() => {
-                    setShowToast(false);
-                    onNavigate(assignedRole === 'admin' ? 'admin' : 'student');
-                }, 1200);
-
-            } catch (err) {
-                console.warn("[Login] API connection notice, utilizing resilient login logic:", err);
-
-                // 1. Master Admin check for saurabh@gmail.com (always succeeds with Saurabh@123 or case-insensitive)
-                if (isMasterAdmin && (isMasterPass || !enteredPass)) {
-                    const assignedRole = "admin";
-                    localStorage.setItem("token", `jwt-persistent-admin-${Date.now()}`);
-                    localStorage.setItem("role", assignedRole);
-                    localStorage.setItem("user", JSON.stringify({
-                        fullName: "Saurabh (Admin)",
-                        email: "saurabh@gmail.com",
-                        role: "admin",
-                        phone: "+91 9876543210",
-                        branch: "Computer Science"
-                    }));
-
-                    if (formData.rememberMe) {
-                        localStorage.setItem("remember_me", "true");
-                        localStorage.setItem("remembered_email", "saurabh@gmail.com");
-                    }
-
-                    setToastMessage("Login successful! Welcome Saurabh (Admin)");
-                    setToastType('success');
-                    setShowToast(true);
-
-                    setTimeout(() => {
-                        setShowToast(false);
-                        onNavigate('admin');
-                    }, 1200);
-                    return;
-                }
-
-                // 2. Offline / Backend Offline handling for other accounts
-                const isOfflineError = err.message === "SERVER_OFFLINE" ||
-                    (err.message && (err.message.includes("fetch") || err.message.includes("network")));
-
-                if (isOfflineError) {
-                    const savedCreds = JSON.parse(localStorage.getItem("saved_credentials") || "{}");
-                    const registeredProfiles = JSON.parse(localStorage.getItem("registered_profiles") || "[]");
-                    const matchedProfile = registeredProfiles.find(p => p.email && p.email.trim().toLowerCase() === emailClean);
-                    const validPassword = savedCreds[emailClean] || matchedProfile?.password;
-
-                    if (isAdmin || (validPassword && validPassword === enteredPass) || (!validPassword && enteredPass)) {
-                        const assignedRole = isAdmin ? "admin" : "student";
-                        localStorage.setItem("token", `jwt-offline-${Date.now()}`);
-                        localStorage.setItem("role", assignedRole);
-                        localStorage.setItem("user", JSON.stringify(matchedProfile || {
-                            fullName: isAdmin ? "Administrator" : (emailClean.split("@")[0].toUpperCase()),
-                            email: formData.email.trim(),
-                            role: assignedRole
-                        }));
-
-                        setToastMessage(isAdmin ? "Login successful! Welcome Admin" : "Login successful! (Offline Mode)");
-                        setToastType('success');
-                        setShowToast(true);
-
-                        setTimeout(() => {
-                            setShowToast(false);
-                            onNavigate(assignedRole === 'admin' ? 'admin' : 'student');
-                        }, 1200);
-                        return;
-                    }
-                }
-
-                // Never display raw technical "Failed to fetch" toast
-                const friendlyMessage = (err.message === "SERVER_OFFLINE" || err.message?.includes("fetch"))
-                    ? "Invalid credentials or backend server offline. Please check your details."
-                    : (err.message || "Invalid email or password");
-
-                setToastMessage(friendlyMessage);
-                setToastType('error');
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
-            }
-        }
-
-        else if (loginView === 'forgot') {
-            if (!formData.email) {
-                setToastMessage("Please enter your email address.");
-                setToastType('error');
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
-                return;
-            }
-
-            try {
-                // Call Python FastAPI forgot-password API
-                const res = await apiForgotPassword(formData.email.trim());
-
-                setToastMessage(res.message || "Reset link sent successfully!");
-                setToastType('success');
-                setShowToast(true);
-                setTimeout(() => {
-                    setShowToast(false);
-                    setLoginView('reset');
-                }, 1500);
-
-            } catch (err) {
-                console.warn("Forgot Password API error, using fallback:", err);
-                setToastMessage("Reset link sent successfully!");
-                setToastType('success');
-                setShowToast(true);
-                setTimeout(() => {
-                    setShowToast(false);
-                    setLoginView('reset');
-                }, 1500);
-            }
-        }
-
-        else if (loginView === 'reset') {
-            if (formData.password !== formData.confirmPassword) {
-                setToastMessage("Passwords do not match!");
-                setToastType('error');
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
-                return;
-            }
-
-            try {
-                // Call Python FastAPI reset-password API
-                const res = await apiResetPassword({
-                    email: formData.email.trim(),
-                    newPassword: formData.password,
-                    confirmPassword: formData.confirmPassword
-                });
-
-                const emailKey = formData.email.trim().toLowerCase();
-                const savedCreds = JSON.parse(localStorage.getItem("saved_credentials") || "{}");
-                savedCreds[emailKey] = formData.password;
-                localStorage.setItem("saved_credentials", JSON.stringify(savedCreds));
-
-                setToastMessage(res.message || 'Password reset successfully!');
-                setToastType('success');
-                setShowToast(true);
-                setTimeout(() => {
-                    setShowToast(false);
-                    setLoginView('login');
-                    setFormData(prev => ({ ...prev, password: '', confirmPassword: "" }));
-                }, 1500);
-
-            } catch (err) {
-                console.error("API Reset Password Error:", err);
-                setToastMessage(err.message || "Failed to reset password.");
-                setToastType('error');
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
-            }
-        }
+        if (loginView === 'login') return handleLoginSubmit();
+        if (loginView === 'forgot') return handleForgotSubmit();
+        if (loginView === 'reset') return handleResetSubmit();
     };
 
     return (
@@ -303,10 +495,13 @@ function Login({ onNavigate, initialView }) {
             {/* MAIN PORTAL CONTAINER CARD */}
             <div className="login-container">
                 {/* LEFT COLUMN: Branding & Recent Placements */}
-                <div className="login-left">
+                <motion.div className="login-left"
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, ease: easeOut }}>
                     <div className="login-logo-section">
-                        <GraduationCap className="logo-icon" size={28} />
-                        <span className="college-name">College Placement Portal</span>
+                        <GraduationCap className="logo-icon" size={28} style={{ color: '#2563eb' }} />
+                        <span className="college-name" style={{ fontSize: '1.25rem', fontWeight: '800', color: '#2563eb' }}>Campus_Hire</span>
                     </div>
 
                     <div className="brand-text-section">
@@ -341,7 +536,7 @@ function Login({ onNavigate, initialView }) {
                             <div className="ledger-row">
                                 <div className="avatar-letter p-theme">P</div>
                                 <div className="placement-details">
-                                    <span className="student-name" style={{ color: '#ffffff' }}>Priya Sharma</span>
+                                    <span className="student-name">Priya Sharma</span>
                                     <span className="student-dept">CSE · Google</span>
                                 </div>
                                 <div className="salary-package text-green">28 LPA</div>
@@ -349,7 +544,7 @@ function Login({ onNavigate, initialView }) {
                             <div className="ledger-row">
                                 <div className="avatar-letter r-theme">R</div>
                                 <div className="placement-details">
-                                    <span className="student-name" style={{ color: '#ffffff' }}>Rahul Desai</span>
+                                    <span className="student-name">Rahul Desai</span>
                                     <span className="student-dept">IT · Microsoft</span>
                                 </div>
                                 <div className="salary-package text-green">22 LPA</div>
@@ -357,7 +552,7 @@ function Login({ onNavigate, initialView }) {
                             <div className="ledger-row">
                                 <div className="avatar-letter s-theme">S</div>
                                 <div className="placement-details">
-                                    <span className="student-name" style={{ color: '#ffffff' }}>Sneha Kulkarni</span>
+                                    <span className="student-name">Sneha Kulkarni</span>
                                     <span className="student-dept">ENTC · Infosys</span>
                                 </div>
                                 <div className="salary-package text-green">9 LPA</div>
@@ -370,12 +565,15 @@ function Login({ onNavigate, initialView }) {
                         <p>"The portal made the entire placement process transparent and stress-free. I always knew exactly where I stood."</p>
                         <span className="author">— Sneha Kulkarni, ENTC - Placed at Infosys</span>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* RIGHT COLUMN: Interactive Login/Forgot/Reset Forms */}
-                <div className="login-right">
+                <motion.div className="login-right"
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}>
                     {/* Back to Home Action Button */}
-                    <button className="btn-back-home" onClick={() => onNavigate('landing')}>
+                    <button type="button" className="btn-back-home" onClick={() => onNavigate('landing')}>
                         <ArrowLeft size={16} />
                         Back to Home
                     </button>
@@ -384,8 +582,8 @@ function Login({ onNavigate, initialView }) {
                         {/* Header titles swap depending on view */}
                         {loginView === 'login' && (
                             <div className="form-header">
-                                <h2>Welcome Back 🚀</h2>
-                                <p>Sign in to your PlacePort account</p>
+                                <h2>Welcome Back🚀</h2>
+                                <p>Sign in to your Campus_Hire account</p>
                             </div>
                         )}
                         {loginView === 'forgot' && (
@@ -405,16 +603,16 @@ function Login({ onNavigate, initialView }) {
                             {/* EMAIL INPUT (Login & Forgot views) */}
                             {loginView !== 'reset' && (
                                 <div className="input-group full-width">
-                                    <label>Email Address</label>
+                                    <label htmlFor="email">Email Address</label>
                                     <div className="input-wrapper">
                                         <Mail size={16} />
                                         <input
+                                            id="email"
                                             type="email"
                                             name="email"
                                             placeholder="priya@college.edu.in"
                                             value={formData.email}
                                             onChange={handleChange}
-                                            autoComplete="username"
                                             required
                                         />
                                     </div>
@@ -423,22 +621,27 @@ function Login({ onNavigate, initialView }) {
 
                             {/* PASSWORD INPUT (Login view) */}
                             {loginView === 'login' && (
-                                <div className="input-group full-width">
+                                <div className="input-group full-width password-input-group" ref={passwordWrapperRef}>
                                     <div className="label-row">
-                                        <label>Password</label>
-                                        <span className="link-span-forgot" onClick={() => setLoginView('forgot')}>
+                                        <label htmlFor="password">Password</label>
+                                        <button
+                                            type="button"
+                                            className="link-span-forgot"
+                                            onClick={() => setLoginView('forgot')}
+                                        >
                                             Forgot password?
-                                        </span>
+                                        </button>
                                     </div>
                                     <div className="input-wrapper">
                                         <Lock size={16} />
                                         <input
+                                            id="password"
                                             type={showPassword ? "text" : "password"}
                                             name="password"
                                             placeholder="Enter your password"
                                             value={formData.password}
                                             onChange={handleChange}
-                                            autoComplete="current-password"
+                                            onFocus={() => setIsPasswordFocused(true)}
                                             required
                                         />
                                         <button
@@ -449,48 +652,60 @@ function Login({ onNavigate, initialView }) {
                                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
+
+                                    {/* Password Strength Popover Checklist */}
+                                    {isPasswordFocused && (
+                                        <div className="password-strength-popover">
+                                            <div className="strength-header">
+                                                <span className={`strength-title ${strengthTheme}`}>{strengthLabel}</span>
+                                                <div className="strength-meter-bars">
+                                                    <div className={`meter-segment ${pwdScore >= 1 ? strengthTheme : ''}`}></div>
+                                                    <div className={`meter-segment ${pwdScore >= 2 ? strengthTheme : ''}`}></div>
+                                                    <div className={`meter-segment ${pwdScore >= 4 ? strengthTheme : ''}`}></div>
+                                                </div>
+                                            </div>
+                                            <p className="strength-subtitle">It's better to have:</p>
+                                            <ul className="strength-checklist">
+                                                <li className={pwdRules.length ? 'rule-satisfied' : ''}>
+                                                    {pwdRules.length ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                    <span>At least 8 characters</span>
+                                                </li>
+                                                <li className={pwdRules.hasUpperLower ? 'rule-satisfied' : ''}>
+                                                    {pwdRules.hasUpperLower ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                    <span>Uppercase and lowercase letters</span>
+                                                </li>
+                                                <li className={pwdRules.hasNumber ? 'rule-satisfied' : ''}>
+                                                    {pwdRules.hasNumber ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                    <span>Numbers</span>
+                                                </li>
+                                                <li className={pwdRules.hasSymbol ? 'rule-satisfied' : ''}>
+                                                    {pwdRules.hasSymbol ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                    <span>Symbols (#$&)</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            {/* CONFIRM PASSWORD INPUT (Login view) */}
-                            {loginView === 'login' && (
-                                <div className="input-group full-width">
-                                    <label>Confirm Password</label>
-                                    <div className="input-wrapper">
-                                        <Lock size={16} />
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            name="confirmPassword"
-                                            placeholder="Confirm your password"
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            autoComplete="current-password"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            className="btn-toggle-eye"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        >
-                                            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
 
                             {/* RESET PASSWORD INPUTS (Reset view) */}
                             {loginView === 'reset' && (
                                 <>
-                                    <div className="input-group full-width">
-                                        <label>New Password</label>
+
+                                    <div className="input-group full-width password-input-group" ref={passwordWrapperRef}>
+                                        <label htmlFor="resetPassword">New Password</label>
                                         <div className="input-wrapper">
                                             <Lock size={16} />
                                             <input
+                                                id="resetPassword"
                                                 type={showPassword ? "text" : "password"}
                                                 name="password"
                                                 placeholder="Enter new password"
                                                 value={formData.password}
                                                 onChange={handleChange}
+                                                onFocus={() => setIsPasswordFocused(true)}
+                                                autoComplete="off"
                                                 required
                                             />
                                             <button
@@ -501,18 +716,54 @@ function Login({ onNavigate, initialView }) {
                                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
                                         </div>
+
+                                        {/* Password Strength Popover Checklist */}
+                                        {isPasswordFocused && (
+                                            <div className="password-strength-popover">
+                                                <div className="strength-header">
+                                                    <span className={`strength-title ${strengthTheme}`}>{strengthLabel}</span>
+                                                    <div className="strength-meter-bars">
+                                                        <div className={`meter-segment ${pwdScore >= 1 ? strengthTheme : ''}`}></div>
+                                                        <div className={`meter-segment ${pwdScore >= 2 ? strengthTheme : ''}`}></div>
+                                                        <div className={`meter-segment ${pwdScore >= 4 ? strengthTheme : ''}`}></div>
+                                                    </div>
+                                                </div>
+                                                <p className="strength-subtitle">It's better to have:</p>
+                                                <ul className="strength-checklist">
+                                                    <li className={pwdRules.length ? 'rule-satisfied' : ''}>
+                                                        {pwdRules.length ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                        <span>At least 8 characters</span>
+                                                    </li>
+                                                    <li className={pwdRules.hasUpperLower ? 'rule-satisfied' : ''}>
+                                                        {pwdRules.hasUpperLower ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                        <span>Uppercase and lowercase letters</span>
+                                                    </li>
+                                                    <li className={pwdRules.hasNumber ? 'rule-satisfied' : ''}>
+                                                        {pwdRules.hasNumber ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                        <span>Numbers</span>
+                                                    </li>
+                                                    <li className={pwdRules.hasSymbol ? 'rule-satisfied' : ''}>
+                                                        {pwdRules.hasSymbol ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                        <span>Symbols (#$&)</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="input-group full-width">
-                                        <label>Confirm Password</label>
+                                        <label htmlFor="resetConfirmPassword">Confirm Password</label>
                                         <div className="input-wrapper">
                                             <Lock size={16} />
                                             <input
+                                                id="resetConfirmPassword"
                                                 type={showConfirmPassword ? "text" : "password"}
                                                 name="confirmPassword"
                                                 placeholder="Confirm your password"
                                                 value={formData.confirmPassword}
                                                 onChange={handleChange}
+                                                onFocus={() => setIsPasswordFocused(false)}
+                                                autoComplete="off"
                                                 required
                                             />
                                             <button
@@ -523,7 +774,21 @@ function Login({ onNavigate, initialView }) {
                                                 {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
                                         </div>
+                                        {formData.confirmPassword.length > 0 && (
+                                            <div style={{ marginTop: '6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '500' }}>
+                                                {formData.password === formData.confirmPassword ? (
+                                                    <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <CheckCircle2 size={14} /> Passwords match
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <XCircle size={14} /> Passwords do not match
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
+
                                 </>
                             )}
 
@@ -575,35 +840,41 @@ function Login({ onNavigate, initialView }) {
                         {/* BOTTOM ACTION LINK (Login view only) */}
                         {loginView === 'login' && (
                             <div className="form-bottom-link-login">
-                                New to College Placement Portal?{' '}
-                                <span className="link-span-register" onClick={() => onNavigate('register')}>
-                                    Create Student Account
-                                </span>
+                                New to Campus_Hire?{' '}
+                                <button
+                                    type="button"
+                                    className="link-span-register"
+                                    onClick={() => onNavigate('register')}
+                                >
+                                    Register Student Account
+                                </button>
                             </div>
                         )}
                     </div>
 
                     <div className="form-footer-copyright">
-                        © 2026  · College Placement Portal
+                        © 2026  · Campus_Hire
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* TOAST NOTIFICATION COMPONENT */}
-            {showToast && (
-                <div className={`toast-notification ${toastType}`}>
-                    <div className="toast-content">
-                        {toastType === 'success' ? (
-                            <CheckCircle2 className="toast-icon" size={18} />
-                        ) : (
-                            <XCircle className="toast-icon" size={18} />
-                        )}
-                        <span>{toastMessage}</span>
+            {
+                showToast && (
+                    <div className={`toast-notification ${toastType}`}>
+                        <div className="toast-content">
+                            {toastType === 'success' ? (
+                                <CheckCircle2 className="toast-icon" size={18} />
+                            ) : (
+                                <XCircle className="toast-icon" size={18} />
+                            )}
+                            <span>{toastMessage}</span>
+                        </div>
+                        <div className="toast-progress-bar"></div>
                     </div>
-                    <div className="toast-progress-bar"></div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 

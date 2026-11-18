@@ -1,9 +1,12 @@
-import './LandingPage.css'
-import { useState } from 'react';
-
+import { easeOut, motion } from 'framer-motion';
+import './LandingPage.css';
+import { useState, useEffect } from 'react';
+import {
+    getLandingPublicStats,
+    getLandingRecentActivity
+} from '../../auth/authService';
 import {
     GraduationCap,
-    Moon,
     ArrowRight,
     ChevronRight,
     Users,
@@ -16,16 +19,9 @@ import {
     Bell,
     BarChart3,
     ShieldCheck,
-    Settings,
-    Clock,
-    Layout,
     UserPlus,
-    LogIn,
-    Mail,
-    Phone,
-    MapPin
-} from 'lucide-react'
-
+    LogIn
+} from 'lucide-react';
 
 function LandingPage({ onNavigate }) {
     const chartData = [
@@ -38,19 +34,53 @@ function LandingPage({ onNavigate }) {
         { month: 'Mar', placements: 72, left: '98%', top: '28%' }
     ];
 
+    const [activePoint, setActivePoint] = useState(chartData[1]);
 
-    // This state will track which month is currently active/hovered
-    const [activePoint, setActivePoint] = useState(chartData[1]); // Default to Oct
+    const [stats, setStats] = useState({
+        totalStudents: 39,
+        totalPlacements: 18,
+        totalCompanies: 18,
+        placementRate: 46.15
+    });
+
+    const [recentActivity, setRecentActivity] = useState([
+        { companyName: "Amazon", jobRoleOverview: "Full Stack Developer", location: "Pune", tag: "Now Hiring" },
+        { companyName: "Accenture", jobRoleOverview: "Web Developer", location: "Dehradun ", tag: "Now Hiring" },
+        { companyName: "Infosys", jobRoleOverview: "Backend developer", location: "Bangalore, India", tag: "Now Hiring" }
+    ]);
+
+    useEffect(() => {
+        // Fetch Public Stats
+        getLandingPublicStats()
+            .then((res) => {
+                if (res?.data) {
+                    setStats({
+                        totalStudents: res.data.totalStudents ?? 0,
+                        totalPlacements: res.data.totalPlacements ?? 0,
+                        totalCompanies: res.data.totalCompanies ?? 0,
+                        placementRate: res.data.placementRate ?? 0
+                    });
+                }
+            })
+            .catch((err) => console.error("Error fetching landing public stats:", err));
+
+        // Fetch Recent Activity
+        getLandingRecentActivity()
+            .then((res) => {
+                if (Array.isArray(res?.data) && res.data.length > 0) {
+                    setRecentActivity(res.data);
+                }
+            })
+            .catch((err) => console.error("Error fetching landing recent activity:", err));
+    }, []);
 
     return (
         <div className='landing-page'>
             <header className='navbar'>
                 <div className='nav-container'>
                     <div className='logo-section'>
-                        <GraduationCap
-                            className='logo-icon' size={28} />
-
-                        <span className='college-name'>College Placement Portal</span>
+                        <GraduationCap className='logo-icon' size={28} style={{ color: '#2563eb' }} />
+                        <span className='college-name' style={{ fontSize: '1.25rem', fontWeight: '800', color: '#2563eb' }}>Campus_Hire</span>
                     </div>
                     <nav className='nav-menu'>
                         <a href="#home">Home</a>
@@ -61,20 +91,29 @@ function LandingPage({ onNavigate }) {
             </header>
             <main className='hero-section'>
                 <div className='hero-container'>
-                    <div className='hero-left'>
+                    <motion.div
+                        className='hero-left'
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
                         <div className='hero-badge'>Campus Recruitment Platform</div>
                         <h1>College <span className='text-highlight'>Placement</span> Portal</h1>
                         <h2>Connecting Students with Placement Opportunities</h2>
                         <p>Manage placements, upload resumes, and track your placement journey from one centralized platform  -  built for students and the placement cell.</p>
 
                         <div className='hero-buttons'>
-                            <button className='btn-register' onClick={() => onNavigate('register')}>Register Now <ArrowRight size={18} />
+                            <button type="button" className='btn-register' onClick={() => onNavigate('register')}>Register Now <ArrowRight size={18} />
                             </button>
-                            <button className='btn-login' onClick={() => onNavigate('login')}>Login <ChevronRight size={18} />
+                            <button type="button" className='btn-login' onClick={() => onNavigate('login')}>Login <ChevronRight size={18} />
                             </button>
                         </div>
-                    </div>
-                    <div className='hero-right'>
+                    </motion.div>
+
+                    <motion.div className='hero-right'
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8, delay: 0.3, ease: easeOut }}>
                         <div className='dashboard-card'>
                             <div className='card-header'>
                                 <div className='header-left'>
@@ -90,32 +129,31 @@ function LandingPage({ onNavigate }) {
                                 <div className='stat-box'>
                                     <span className='stat-label'>Total Students</span>
                                     <div className='stat-row'>
-                                        <span className='stat-value'>500</span>
-                                        <span className='stat-change'>+12%</span>
+                                        <span className='stat-value'>{stats.totalStudents}</span>
+                                        <span className='stat-change'>Live</span>
                                     </div>
                                 </div>
                                 <div className='stat-box'>
                                     <span className='stat-label'>Placements</span>
                                     <div className='stat-row'>
-                                        <span className='stat-value'>120</span>
-                                        <span className='stat-change'>+8%</span>
+                                        <span className='stat-value'>{stats.totalPlacements}</span>
+                                        <span className='stat-change'>Live</span>
                                     </div>
                                 </div>
                                 <div className='stat-box'>
                                     <span className='stat-label'>Companies</span>
                                     <div className='stat-row'>
-                                        <span className='stat-value'>30</span>
-                                        <span className='stat-change'>+5%</span>
+                                        <span className='stat-value'>{stats.totalCompanies}</span>
+                                        <span className='stat-change'>Live</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="chart-section">
                                 <div className="chart-header">
-                                    <span className="chart-title" style={{ color: '#ffffff' }}>Placement Trend</span>
+                                    <span className="chart-title">Placement Trend</span>
                                     <span className="chart-year">AY 2025-26</span>
                                 </div>
                                 <div className='chart-wrapper'>
-
                                     <svg viewBox="0 0 400 100" className="trend-chart" preserveAspectRatio='none'>
                                         <defs>
                                             <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -123,24 +161,23 @@ function LandingPage({ onNavigate }) {
                                                 <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
                                             </linearGradient>
                                         </defs>
-                                        {/* Filled Area Curve matching the mockup (stretching edge-to-edge) */}
                                         <path d="M 0 80 C 4 79, 6 78, 8 78 C 40 73, 50 63, 74 63 C 98 63, 110 68, 140 67 C 170 66, 180 63, 206 63 C 232 63, 250 53, 272 50 C 294 47, 310 44, 338 42 C 366 40, 380 30, 392 28 C 394 28, 396 27, 400 26 L 400 100 L 0 100 Z" fill="url(#chartGradient)" />
-
-                                        {/* Glowing Stroke Curve matching the mockup (stretching edge-to-edge) */}
                                         <path d="M 0 80 C 4 79, 6 78, 8 78 C 40 73, 50 63, 74 63 C 98 63, 110 68, 140 67 C 170 66, 180 63, 206 63 C 232 63, 250 53, 272 50 C 294 47, 310 44, 338 42 C 366 40, 380 30, 392 28 C 394 28, 396 27, 400 26" fill="none" stroke="#63A8FF" strokeWidth="3" />
-
-
                                     </svg>
-                                    <div className='chart-tooltip' style={{ left: activePoint.left, top: activePoint.top }}>
-                                        <span className='tooltip-month'>{activePoint.month}</span>
-                                        <span className='tooltip-value'>placements : {activePoint.placements}</span>
-                                    </div>
-                                    <div className='chart-tooltip-dot' style={{ left: activePoint.left, top: activePoint.top }}></div>
-                                    <div className='chart-tooltip-line' style={{ left: activePoint.left }}></div>
+                                    {activePoint && (
+                                        <>
+                                            <div className='chart-tooltip' style={{ left: activePoint.left, top: activePoint.top }}>
+                                                <span className='tooltip-month'>{activePoint.month}</span>
+                                                <span className='tooltip-value'>placements : {activePoint.placements}</span>
+                                            </div>
+                                            <div className='chart-tooltip-dot' style={{ left: activePoint.left, top: activePoint.top }}></div>
+                                            <div className='chart-tooltip-line' style={{ left: activePoint.left }}></div>
+                                        </>
+                                    )}
                                     <div className="hover-zones">
-                                        {chartData.map((point, index) => (
+                                        {chartData.map((point) => (
                                             <div
-                                                key={index}
+                                                key={point.month}
                                                 className="hover-zone"
                                                 onMouseEnter={() => setActivePoint(point)}
                                             />
@@ -152,32 +189,30 @@ function LandingPage({ onNavigate }) {
                                 </div>
                             </div>
                             <div className='activity-list'>
-                                <div className='activity-item'>
-                                    <div className='company-info'>
-                                        <span className='company-name'>Google</span>
-                                        <span className='job-role'>SDE Intern</span>
-                                    </div>
-                                    <span className='status-badge offer'>Offer</span>
-                                </div>
-                                <div className='activity-item'>
-                                    <div className='company-info'>
-                                        <span className='company-name'>Microsoft</span>
-                                        <span className='job-role'>FTE 2026</span>
-                                    </div>
-                                    <span className='status-badge interview'>Interview</span>
-                                </div>
-                                <div className='activity-item'>
-                                    <div className='company-info'>
-                                        <span className='company-name'>Infosys</span>
-                                        <span className='job-role'>Systems Eng.</span>
-                                    </div>
-                                    <span className='status-badge applied'>Applied</span>
-                                </div>
+                                {recentActivity.map((item, index) => {
+                                    const badgeTag = item.tag || item.location || 'Now Hiring';
+                                    const lowerTag = badgeTag.toLowerCase();
+                                    let badgeClass = 'applied';
+                                    if (lowerTag.includes('offer')) badgeClass = 'offer';
+                                    else if (lowerTag.includes('interview')) badgeClass = 'interview';
+                                    else if (lowerTag.includes('hiring') || lowerTag.includes('now')) badgeClass = 'applied';
+
+                                    return (
+                                        <div key={index} className='activity-item'>
+                                            <div className='company-info'>
+                                                <span className='company-name'>{item.companyName}</span>
+                                                <span className='job-role'>{item.jobRoleOverview || item.location}</span>
+                                            </div>
+                                            <span className={`status-badge ${badgeClass}`}>
+                                                {badgeTag}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
-
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
                 <div className="wave-container">
                     <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -192,28 +227,28 @@ function LandingPage({ onNavigate }) {
                         <div className='stat-icon-wrapper gray-theme'>
                             <Users className='stat-icon' size={20} />
                         </div>
-                        <h3>500+</h3>
+                        <h3>{stats.totalStudents}+</h3>
                         <p>Students</p>
                     </div>
                     <div className='stats-card'>
                         <div className='stat-icon-wrapper blue-theme'>
                             <Award className='stat-icon' size={20} />
                         </div>
-                        <h3>120+</h3>
+                        <h3>{stats.totalPlacements}+</h3>
                         <p>Placements</p>
                     </div>
                     <div className='stats-card'>
                         <div className='stat-icon-wrapper gray-theme'>
                             <Building2 className='stat-icon' size={20} />
                         </div>
-                        <h3>30+</h3>
+                        <h3>{stats.totalCompanies}+</h3>
                         <p>Companies</p>
                     </div>
                     <div className='stats-card'>
                         <div className='stat-icon-wrapper blue-theme'>
                             <TrendingUp className='stat-icon' size={20} />
                         </div>
-                        <h3>95%</h3>
+                        <h3>{typeof stats.placementRate === 'number' ? stats.placementRate.toFixed(2) : stats.placementRate}%</h3>
                         <p>Placement Rate</p>
                     </div>
                 </div>
@@ -346,11 +381,11 @@ function LandingPage({ onNavigate }) {
                     <h2>Ready to Start Your Placement Journey?</h2>
                     <p>Join 500+ students already using <strong>College Placement Portal</strong> to land their dream jobs.</p>
                     <div className="cta-buttons">
-                        <button className="btn-create-account" onClick={() => onNavigate('register')}>
+                        <button type="button" className="btn-create-account" onClick={() => onNavigate('register')}>
                             <UserPlus size={16} />
-                            Create Account
+                            Register Now
                         </button>
-                        <button className="btn-sign-in" onClick={() => onNavigate('login')}>
+                        <button type="button" className="btn-sign-in" onClick={() => onNavigate('login')}>
                             <LogIn size={16} />
                             Sign In
                         </button>
@@ -358,17 +393,8 @@ function LandingPage({ onNavigate }) {
                 </div>
             </section>
 
-        </div >
-    )
+        </div>
+    );
 }
+
 export default LandingPage;
-
-
-
-
-
-
-
-
-
-

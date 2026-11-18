@@ -1,120 +1,86 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { AnimatePresence, motion } from 'framer-motion';
 import LandingPage from './pages/public/LandingPage';
 import Registration from './pages/public/Registration';
 import Login from "./pages/public/Login";
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentDashboard from "./pages/student/StudentDashboard";
+import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 
-function resolvePage(path, search) {
-  const token = localStorage.getItem("token");
-  const storedRole = localStorage.getItem("role");
-  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const role = (storedRole || storedUser?.role || "").toLowerCase();
-
-  if (path.startsWith('/reset-password') || search.includes('token=') || search.includes('email=')) {
-    return 'login';
-  }
-
-  if (path === '/admin') {
-    if (token && role === 'admin') return 'admin';
-    if (token && role === 'student') return 'student'; // Prevent student from accessing admin page
-    return 'login'; // Redirect to login if not logged in
-  }
-
-  if (path === '/student') {
-    if (token && role === 'student') return 'student';
-    if (token && role === 'admin') return 'admin'; // Prevent admin from accessing student page
-    return 'login'; // Redirect to login if not logged in
-  }
-
-  if (path === '/login') return 'login';
-  if (path === '/register') return 'register';
-
-  return 'landing';
-}
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
-    return resolvePage(window.location.pathname, window.location.search);
+    const path = window.location.pathname;
+    const search = window.location.search;
+    if (path.startsWith('/reset-password') || search.includes('token=') || search.includes('email=')) {
+      return 'login';
+    }
+    if (path === '/student') {
+      return 'student';
+    }
+    if (path === '/admin') {
+      return 'admin';
+    }
+    return 'landing';
   });
 
-  useEffect(() => {
-    const handlePopState = () => {
-      const page = resolvePage(window.location.pathname, window.location.search);
-      setCurrentPage(page);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Sync browser address bar URL when route guard resolves/redirects page
-  useEffect(() => {
-    const targetUrl = currentPage === 'admin' ? '/admin'
-      : currentPage === 'student' ? '/student'
-      : currentPage === 'login' ? '/login'
-      : currentPage === 'register' ? '/register'
-      : '/';
-
-    if (window.location.pathname !== targetUrl) {
-      window.history.replaceState(null, '', targetUrl);
-    }
-  }, [currentPage]);
-
   const navigateTo = (page) => {
-    const token = localStorage.getItem("token");
-    const storedRole = localStorage.getItem("role");
-    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-    const role = (storedRole || storedUser?.role || "").toLowerCase();
-
-    let targetPage = page;
-
-    // Role Guard Check
-    if (page === 'admin' && role !== 'admin') {
-      targetPage = role === 'student' ? 'student' : 'login';
-    } else if (page === 'student' && role !== 'student') {
-      targetPage = role === 'admin' ? 'admin' : 'login';
-    }
-
-    setCurrentPage(targetPage);
+    setCurrentPage(page);
     window.scrollTo(0, 0);
 
     // Sync browser URL bar dynamically
-    if (targetPage === 'admin') window.history.pushState(null, '', '/admin');
-    else if (targetPage === 'student') window.history.pushState(null, '', '/student');
-    else if (targetPage === 'login') window.history.pushState(null, '', '/login');
-    else if (targetPage === 'register') window.history.pushState(null, '', '/register');
+    if (page === 'admin') window.history.pushState(null, '', '/admin');
+    else if (page === 'student') window.history.pushState(null, '', '/student');
+    else if (page === 'login') window.history.pushState(null, '', '/login');
+    else if (page === 'register') window.history.pushState(null, '', '/register');
     else window.history.pushState(null, '', '/');
   };
 
   return (
     <>
-      {currentPage === 'landing' && (
-        <LandingPage onNavigate={navigateTo} />
-      )}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentPage}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -15 }}
+          transition={{ duration: 0.3 }}
+          style={{ minHeight: '100vh', width: '100%' }}
+        >
+          {currentPage === 'landing' && (
+            <LandingPage onNavigate={navigateTo} />
+          )}
 
-      {currentPage === 'register' && (
-        <Registration onNavigate={navigateTo} />
-      )}
+          {currentPage === 'register' && (
+            <Registration onNavigate={navigateTo} />
+          )}
 
-      {currentPage === 'login' && (
-        <Login 
-          onNavigate={navigateTo} 
-          initialView={
-            window.location.pathname.startsWith('/reset-password') || 
-            window.location.search.includes('token=') || 
-            window.location.search.includes('email=') 
-              ? 'reset' 
-              : 'login'
-          } 
-        />
-      )}
+          {currentPage === 'login' && (
+            <Login
+              onNavigate={navigateTo}
+              initialView={
+                window.location.pathname.startsWith('/reset-password') ||
+                  window.location.search.includes('token=') ||
+                  window.location.search.includes('email=')
+                  ? 'reset'
+                  : 'login'
+              }
+            />
+          )}
 
-      {currentPage === 'admin' && (
-        <AdminDashboard onNavigate={navigateTo} />
-      )}
+          {currentPage === 'admin' && (
+            <AdminDashboard onNavigate={navigateTo} />
+          )}
 
-      {currentPage === 'student' && (
-        <StudentDashboard onNavigate={navigateTo} />
+          {currentPage === 'student' && (
+            <StudentDashboard onNavigate={navigateTo} />
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Chatbot — only visible on student and admin pages */}
+      {(currentPage === 'student' || currentPage === 'admin') && (
+        <ChatbotWidget />
       )}
     </>
   );

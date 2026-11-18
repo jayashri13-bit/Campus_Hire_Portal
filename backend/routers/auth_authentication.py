@@ -7,6 +7,7 @@ from schemas import StudentRegister, LoginRequest, ForgotPasswordRequest, ResetP
 router = APIRouter(prefix="/api/auth", tags=["Feature: Authentication & Security"])
 
 @router.post("/register")
+@router.post("/register/student")
 def register_student(data: StudentRegister):
     email_key = data.email.strip().lower()
     
@@ -69,6 +70,7 @@ def register_student(data: StudentRegister):
     }
 
 @router.post("/login")
+@router.post("/admin/login")
 def login_user(data: LoginRequest):
     email_key = data.email.strip().lower()
 

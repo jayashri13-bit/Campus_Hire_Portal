@@ -117,3 +117,29 @@ def health_check():
             }
         }
     }
+
+@app.get("/api/public/landing/stats")
+@app.get("/public/landing/stats")
+def public_landing_stats():
+    return {
+        "status": "success",
+        "data": {
+            "totalStudents": 520,
+            "totalPlacements": 340,
+            "totalCompanies": 85,
+            "placementRate": 82.5
+        }
+    }
+
+@app.get("/api/public/landing/recent-activity")
+@app.get("/public/landing/recent-activity")
+def public_landing_recent_activity():
+    return {
+        "status": "success",
+        "data": [
+            {"companyName": "Google", "jobRoleOverview": "Software Engineer", "location": "Bangalore", "tag": "Now Hiring"},
+            {"companyName": "Microsoft", "jobRoleOverview": "Cloud Solutions Architect", "location": "Hyderabad", "tag": "Now Hiring"},
+            {"companyName": "Amazon", "jobRoleOverview": "SDE Intern", "location": "Pune", "tag": "Now Hiring"}
+        ]
+    }
+

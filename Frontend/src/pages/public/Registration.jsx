@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import { easeOut, motion } from 'framer-motion';
+
+import { registerStudent, saveAuthToken } from "../../auth/authService";
+
+import { useState, useEffect, useRef } from "react";
 import './Registration.css';
-import { apiRegister } from '../../api/authApi';
 import {
     GraduationCap,
     ArrowLeft,
@@ -12,15 +15,44 @@ import {
     GraduationCap as CourseIcon,
     Award,
     Lock,
+    Eye,
+    EyeOff,
     ArrowRight,
     Building2,
     TrendingUp,
     CheckCircle2,
     XCircle,
     Briefcase,
-    FileText
+    FileText,
+    Circle
 } from "lucide-react";
 
+
+/** Cleans and sanitizes user input strings before storing or displaying. */
+function sanitizeStorageString(val) {
+    if (val === null || val === undefined) return '';
+    let str = String(val);
+    try {
+        if (str.includes('%')) {
+            str = decodeURIComponent(str);
+        }
+    } catch {
+        // Fallback
+    }
+    const doc = typeof DOMParser !== 'undefined' ? new DOMParser().parseFromString(str, 'text/html') : null;
+    const cleanText = doc ? (doc.body.textContent || '') : str;
+    const cleanStr = cleanText.replace(/[<>'"]/g, '').trim();
+    return cleanStr;
+}
+
+function getStorageString(val) {
+    if (val === null || val === undefined) return '';
+    try {
+        return decodeURIComponent(String(val));
+    } catch {
+        return String(val);
+    }
+}
 
 function Registration({ onNavigate }) {
     // Component state to track all form field values
@@ -40,10 +72,27 @@ function Registration({ onNavigate }) {
     // Validation errors state tracking
     const [errors, setErrors] = useState({});
 
+    // Password visibility toggle states
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     // Toast notification states
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState('success');
+    const toastTimeoutRef = useRef(null);
+
+    const triggerToast = (message, type = 'error', duration = 4000) => {
+        if (toastTimeoutRef.current) {
+            clearTimeout(toastTimeoutRef.current);
+        }
+        setToastMessage(message);
+        setToastType(type);
+        setShowToast(true);
+        toastTimeoutRef.current = setTimeout(() => {
+            setShowToast(false);
+        }, duration);
+    };
 
     // DOB Custom Calendar states
     const [isDobPickerOpen, setIsDobPickerOpen] = useState(false);
@@ -61,116 +110,112 @@ function Registration({ onNavigate }) {
     const dobTotalDays = new Date(dobCalDate.getFullYear(), dobCalDate.getMonth() + 1, 0).getDate();
     const dobFirstDayIndex = new Date(dobCalDate.getFullYear(), dobCalDate.getMonth(), 1).getDay();
 
-    // Click away to close calendar picker
+    // Password strength card popover state & ref
+    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+    const passwordWrapperRef = useRef(null);
+
+    // Password validation rules & real-time strength scoring
+    const currentPassword = formData.password || "";
+    const pwdRules = {
+        length: currentPassword.length >= 8,
+        hasUpperLower: /[a-z]/.test(currentPassword) && /[A-Z]/.test(currentPassword),
+        hasNumber: /\d/.test(currentPassword),
+        hasSymbol: /[!@#$%^&*(),.?":{}|<>]/.test(currentPassword)
+    };
+    const pwdScore = Object.values(pwdRules).filter(Boolean).length;
+
+    let strengthLabel = "Weak password";
+    let strengthTheme = "weak";
+    if (pwdScore >= 4) {
+        strengthLabel = "Strong password";
+        strengthTheme = "strong";
+    } else if (pwdScore >= 2) {
+        strengthLabel = "Medium password";
+        strengthTheme = "medium";
+    }
+
+    // Click away to close calendar picker and password strength card
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dobDatePickerRef.current && !dobDatePickerRef.current.contains(event.target)) {
                 setIsDobPickerOpen(false);
             }
+            if (passwordWrapperRef.current && !passwordWrapperRef.current.contains(event.target)) {
+                setIsPasswordFocused(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            if (toastTimeoutRef.current) {
+                clearTimeout(toastTimeoutRef.current);
+            }
         };
     }, []);
 
     const formatDOBDate = (dateString) => {
         if (!dateString) return '';
         const d = new Date(dateString);
-        if (isNaN(d.getTime())) return dateString;
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+        if (Number.isNaN(d.getTime())) return dateString;
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replaceAll('/', '-');
+    };
+
+    // Strategy map for field validation to reduce cognitive complexity
+    const validationRules = {
+        fullname: (value) => {
+            if (!value.trim()) return 'Full name is required';
+            if (value.trim().length < 3) return 'Name must be at least 3 characters';
+            if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name can only contain letters and spaces';
+            return '';
+        },
+        email: (value) => {
+            if (!value) return 'Email address is required';
+            if (!/^[a-zA-Z\d._%+-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/.test(value)) return 'Please enter a valid email address';
+            return '';
+        },
+        mobile: (value) => {
+            if (!value) return 'Mobile number is required';
+            if (/\D/.test(value)) return 'Only numbers are allowed in mobile number';
+            if (value.length !== 10) return 'Mobile number must be exactly 10 digits';
+            return '';
+        },
+        dob: (value) => {
+            if (!value) return 'Date of Birth is required';
+            const dobDate = new Date(value);
+            const today = new Date();
+            let age = today.getFullYear() - dobDate.getFullYear();
+            const m = today.getMonth() - dobDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+            if (dobDate > today) return 'Date of Birth cannot be in the future';
+            if (age < 18) return 'You must be at least 18 years old to register';
+            return '';
+        },
+        department: (value) => !value ? 'Please select your department' : '',
+        course: (value) => !value ? 'Please select your course' : '',
+        year: (value) => !value ? 'Please select your current year' : '',
+        cgpa: (value) => {
+            if (!value) return 'CGPA is required';
+            const num = Number.parseFloat(value);
+            if (Number.isNaN(num) || num < 0 || num > 10) return 'CGPA must be a number between 0.00 and 10.00';
+            return '';
+        },
+        password: (value) => {
+            if (!value) return 'Password is required';
+            if (value.length < 8) return 'Password must be at least 8 characters long';
+            if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/\d/.test(value) || !/[!@#$%^&*]/.test(value)) return 'Must include uppercase, lowercase, number, and special character';
+            return '';
+        },
+        confirmPassword: (value) => {
+            if (!value) return 'Please confirm your password';
+            if (value !== formData.password) return 'Passwords do not match';
+            return '';
+        }
     };
 
     // Validate a single field and return its error message
     const validateField = (name, value) => {
-        let errorMsg = '';
-        switch (name) {
-            case 'fullname':
-                if (!value.trim()) {
-                    errorMsg = 'Full name is required';
-                } else if (value.trim().length < 3) {
-                    errorMsg = 'Name must be at least 3 characters';
-                } else if (!/^[a-zA-Z\s]+$/.test(value)) {
-                    errorMsg = 'Name can only contain letters and spaces';
-                }
-                break;
-            case 'email':
-                if (!value) {
-                    errorMsg = 'Email address is required';
-                } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-                    errorMsg = 'Please enter a valid email address';
-                }
-                break;
-            case 'mobile':
-                if (!value) {
-                    errorMsg = 'Mobile number is required';
-                } else if (!/^[0-9]{10}$/.test(value)) {
-                    errorMsg = 'Mobile number must be exactly 10 digits';
-                }
-                break;
-            case 'dob':
-                if (!value) {
-                    errorMsg = 'Date of Birth is required';
-                } else {
-                    const dobDate = new Date(value);
-                    const today = new Date();
-                    let age = today.getFullYear() - dobDate.getFullYear();
-                    const m = today.getMonth() - dobDate.getMonth();
-                    if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
-                        age--;
-                    }
-                    if (dobDate > today) {
-                        errorMsg = 'Date of Birth cannot be in the future';
-                    } else if (age < 15) {
-                        errorMsg = 'You must be at least 15 years old to register';
-                    }
-                }
-                break;
-            case 'department':
-                if (!value) {
-                    errorMsg = 'Please select your department';
-                }
-                break;
-            case 'course':
-                if (!value) {
-                    errorMsg = 'Please select your course';
-                }
-                break;
-            case 'year':
-                if (!value) {
-                    errorMsg = 'Please select your current year';
-                }
-                break;
-            case 'cgpa':
-                if (!value) {
-                    errorMsg = 'CGPA is required';
-                } else {
-                    const num = parseFloat(value);
-                    if (isNaN(num) || num < 0 || num > 10) {
-                        errorMsg = 'CGPA must be a number between 0.00 and 10.00';
-                    }
-                }
-                break;
-            case 'password':
-                if (!value) {
-                    errorMsg = 'Password is required';
-                } else if (value.length < 8) {
-                    errorMsg = 'Password must be at least 8 characters long';
-                } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/.test(value)) {
-                    errorMsg = 'Must include uppercase, lowercase, number, and special character';
-                }
-                break;
-            case 'confirmPassword':
-                if (!value) {
-                    errorMsg = 'Please confirm your password';
-                } else if (value !== formData.password) {
-                    errorMsg = 'Passwords do not match';
-                }
-                break;
-            default:
-                break;
-        }
-        return errorMsg;
+        const validator = validationRules[name];
+        return validator ? validator(value) : '';
     };
 
     // Event handler for form input changes
@@ -209,10 +254,7 @@ function Registration({ onNavigate }) {
         if (Object.keys(tempErrors).length > 0) {
             // Trigger toast if password and confirm password fields are not identical
             if (formData.password !== formData.confirmPassword) {
-                setToastMessage("Passwords do not match");
-                setToastType('error');
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
+                triggerToast("Passwords do not match", 'error', 3000);
             }
             const firstErrorField = Object.keys(tempErrors)[0];
             const inputElement = document.getElementsByName(firstErrorField)[0];
@@ -222,109 +264,185 @@ function Registration({ onNavigate }) {
             return;
         }
 
+        // Check for existing/already registered email and mobile number in local registry
+        const rawProfiles = localStorage.getItem("registered_profiles");
+        let existingProfiles = [];
+        if (rawProfiles) {
+            try {
+                const parsed = JSON.parse(rawProfiles);
+                if (Array.isArray(parsed)) existingProfiles = parsed;
+            } catch {
+                existingProfiles = [];
+            }
+        }
+        const rawUser = localStorage.getItem("user");
+        if (rawUser) {
+            try {
+                const parsedUser = JSON.parse(rawUser);
+                if (parsedUser && parsedUser.email) {
+                    const alreadyInList = existingProfiles.some(
+                        p => getStorageString(p.email).toLowerCase() === getStorageString(parsedUser.email).toLowerCase()
+                    );
+                    if (!alreadyInList) existingProfiles.push(parsedUser);
+                }
+            } catch { }
+        }
 
-        // Payload formatted for Python FastAPI backend
-        const registrationPayload = {
+        const inputEmail = sanitizeStorageString(formData.email).toLowerCase().trim();
+        const inputMobile = sanitizeStorageString(formData.mobile).trim();
+
+        const isEmailUsed = inputEmail && existingProfiles.some(p => {
+            const e = getStorageString(p.email || p.userEmail).toLowerCase().trim();
+            return e === inputEmail;
+        });
+
+        const isPhoneUsed = inputMobile && existingProfiles.some(p => {
+            const ph = getStorageString(p.phone || p.mobile || p.userMobile).trim();
+            return ph === inputMobile;
+        });
+
+        if (isEmailUsed && isPhoneUsed) {
+            setErrors(prev => ({
+                ...prev,
+                email: "Email address is already registered",
+                mobile: "Mobile number is already registered"
+            }));
+            return;
+        } else if (isEmailUsed) {
+            setErrors(prev => ({
+                ...prev,
+                email: "Email address is already registered"
+            }));
+            return;
+        } else if (isPhoneUsed) {
+            setErrors(prev => ({
+                ...prev,
+                mobile: "Phone number is already registered"
+            }));
+            return;
+        }
+
+        // Reformat stored yyyy-mm-dd date into dd-mm-yyyy for the backend API
+        let apiFormattedDob = "";
+        if (formData.dob) {
+            const [year, month, day] = formData.dob.split("-");
+            apiFormattedDob = `${day}-${month}-${year}`;
+        }
+
+        const requestBody = {
             fullName: formData.fullname,
-            email: formData.email.trim(),
+            email: formData.email,
             mobile: formData.mobile,
-            dob: formData.dob || null,
+            dob: apiFormattedDob,
             department: formData.department,
             course: formData.course,
-            currentYear: Number(formData.year) || 2026,
-            cgpa: Number(formData.cgpa) || 0.0,
+            currentYear: Number(formData.year),
+            cgpa: Number(formData.cgpa),
             password: formData.password,
             confirmPassword: formData.confirmPassword
         };
 
         try {
-            // Call Python FastAPI register endpoint
-            const res = await apiRegister(registrationPayload);
-            const token = res.token || `jwt-token-${Date.now()}`;
-            localStorage.setItem("token", token);
-            localStorage.setItem("role", "student");
+            const response = await registerStudent(requestBody);
 
-            const studentProfile = {
-                fullName: formData.fullname,
-                email: formData.email.trim(),
-                phone: formData.mobile,
-                branch: formData.department,
-                course: formData.course,
-                passingYear: formData.year,
-                cgpa: formData.cgpa,
-                role: "student",
-                skills: "React, JavaScript, CSS, Node.js, Python",
-                linkedinUrl: `https://linkedin.com/in/${formData.fullname.toLowerCase().replace(/\s+/g, '-')}`,
-                githubUrl: `https://github.com/${formData.fullname.toLowerCase().replace(/\s+/g, '')}`
-            };
-            localStorage.setItem("user", JSON.stringify(studentProfile));
-
-            const registeredProfiles = JSON.parse(localStorage.getItem("registered_profiles") || "[]");
-            const updatedProfiles = registeredProfiles.filter(p => p.email.toLowerCase() !== formData.email.toLowerCase());
-            updatedProfiles.push(studentProfile);
-            localStorage.setItem("registered_profiles", JSON.stringify(updatedProfiles));
-
-            const savedCreds = JSON.parse(localStorage.getItem("saved_credentials") || "{}");
-            savedCreds[formData.email.trim().toLowerCase()] = formData.password;
-            localStorage.setItem("saved_credentials", JSON.stringify(savedCreds));
-
-            setToastMessage(res.message || "Registration completed successfully!");
-            setToastType("success");
-            setShowToast(true);
-
-            setTimeout(() => {
-                setShowToast(false);
-                onNavigate("student");
-            }, 1500);
-
-        } catch (err) {
-            console.warn("API Registration error, evaluating fallback:", err);
-
-            // If backend is offline ("Failed to fetch"), proceed with local registration fallback
-            if (err.message && err.message.includes("fetch")) {
-                const token = `jwt-offline-${Date.now()}`;
-                localStorage.setItem("token", token);
-                localStorage.setItem("role", "student");
-
-                const studentProfile = {
-                    fullName: formData.fullname,
-                    email: formData.email.trim(),
-                    phone: formData.mobile,
-                    branch: formData.department,
-                    course: formData.course,
-                    passingYear: formData.year,
-                    cgpa: formData.cgpa,
-                    role: "student",
-                    skills: "React, JavaScript, CSS, Node.js, Python",
-                    linkedinUrl: `https://linkedin.com/in/${formData.fullname.toLowerCase().replace(/\s+/g, '-')}`,
-                    githubUrl: `https://github.com/${formData.fullname.toLowerCase().replace(/\s+/g, '')}`
-                };
-                localStorage.setItem("user", JSON.stringify(studentProfile));
-
-                const registeredProfiles = JSON.parse(localStorage.getItem("registered_profiles") || "[]");
-                const updatedProfiles = registeredProfiles.filter(p => p.email.toLowerCase() !== formData.email.toLowerCase());
-                updatedProfiles.push(studentProfile);
-                localStorage.setItem("registered_profiles", JSON.stringify(updatedProfiles));
-
-                const savedCreds = JSON.parse(localStorage.getItem("saved_credentials") || "{}");
-                savedCreds[formData.email.trim().toLowerCase()] = formData.password;
-                localStorage.setItem("saved_credentials", JSON.stringify(savedCreds));
-
-                setToastMessage("Registration completed successfully!");
-                setToastType("success");
-                setShowToast(true);
-
-                setTimeout(() => {
-                    setShowToast(false);
-                    onNavigate("student");
-                }, 1500);
-                return;
+            // 1. Save the backend token and student details to localStorage
+            if (response.data?.token) {
+                saveAuthToken(response.data.token);
             }
 
-            setToastMessage(err.message || "Registration failed. Please try again.");
-            setToastType("error");
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+            // Save student details to local registry
+            const cleanFullName = sanitizeStorageString(formData.fullname);
+            const cleanEmail = sanitizeStorageString(formData.email).toLowerCase();
+            const cleanPassword = sanitizeStorageString(formData.password);
+            const cleanPhone = sanitizeStorageString(formData.mobile);
+            const cleanBranch = sanitizeStorageString(formData.department);
+            const cleanYear = sanitizeStorageString(formData.year);
+            const cleanCgpa = sanitizeStorageString(formData.cgpa);
+
+            const newProfile = {
+                fullName: cleanFullName,
+                email: cleanEmail,
+                password: cleanPassword,
+                phone: cleanPhone,
+                branch: cleanBranch,
+                passingYear: cleanYear,
+                cgpa: cleanCgpa,
+                skills: sanitizeStorageString("React, JavaScript, CSS, Node.js, Python"),
+                linkedinUrl: sanitizeStorageString(`https://linkedin.com/in/${encodeURIComponent(formData.fullname.toLowerCase().replace(/\s+/g, '-'))}`),
+                githubUrl: sanitizeStorageString(`https://github.com/${encodeURIComponent(formData.fullname.toLowerCase().replace(/\s+/g, ''))}`),
+                portfolioUrl: "",
+                resumeUrl: ""
+            };
+            localStorage.setItem("user", JSON.stringify(newProfile));
+
+            const updatedProfiles = existingProfiles
+                .filter(p => getStorageString(p.email).toLowerCase() !== getStorageString(cleanEmail).toLowerCase())
+                .map(p => ({
+                    fullName: sanitizeStorageString(p.fullName),
+                    email: sanitizeStorageString(p.email).toLowerCase(),
+                    password: sanitizeStorageString(p.password),
+                    phone: sanitizeStorageString(p.phone),
+                    branch: sanitizeStorageString(p.branch),
+                    passingYear: sanitizeStorageString(p.passingYear),
+                    cgpa: sanitizeStorageString(p.cgpa),
+                    skills: sanitizeStorageString(p.skills),
+                    linkedinUrl: sanitizeStorageString(p.linkedinUrl),
+                    githubUrl: sanitizeStorageString(p.githubUrl),
+                    portfolioUrl: sanitizeStorageString(p.portfolioUrl),
+                    resumeUrl: sanitizeStorageString(p.resumeUrl)
+                }));
+            updatedProfiles.push(newProfile);
+            localStorage.setItem("registered_profiles", JSON.stringify(updatedProfiles));
+
+            triggerToast("Registration completed successfully!", "success", 2000);
+
+            // 2. Redirect directly to the Student Dashboard after 2 seconds
+            setTimeout(() => {
+                onNavigate("student");
+            }, 2000);
+
+        } catch (err) {
+            const errData = err?.response?.data;
+            let serverMsg = "";
+
+            if (typeof errData === "string") {
+                serverMsg = errData;
+            } else if (errData && typeof errData === "object") {
+                serverMsg = errData.message || errData.error || errData.details || "";
+                if (!serverMsg && errData.errors) {
+                    if (typeof errData.errors === "string") {
+                        serverMsg = errData.errors;
+                    } else if (typeof errData.errors === "object") {
+                        serverMsg = Object.values(errData.errors).flat().join(", ");
+                    }
+                }
+            }
+
+            const lowerMsg = serverMsg.toLowerCase();
+            const isEmailError = lowerMsg.includes("email");
+            const isPhoneError = lowerMsg.includes("phone") || lowerMsg.includes("mobile");
+
+            if (isEmailError && isPhoneError) {
+                setErrors(prev => ({
+                    ...prev,
+                    email: "Email address is already registered",
+                    mobile: "Mobile number is already registered"
+                }));
+            } else if (isEmailError) {
+                setErrors(prev => ({
+                    ...prev,
+                    email: "Email address is already registered"
+                }));
+            } else if (isPhoneError) {
+                setErrors(prev => ({
+                    ...prev,
+                    mobile: "Phone number is already registered"
+                }));
+            } else if (serverMsg) {
+                triggerToast(serverMsg, "error");
+            } else {
+                triggerToast("Registration failed. Please try again.", "error");
+            }
         }
     };
 
@@ -371,11 +489,14 @@ function Registration({ onNavigate }) {
 
             <div className="register-container">
                 {/* LEFT SIDE PANEL: Branding, Mockup, Stats, Testimonial */}
-                <div className="register-left">
+                <motion.div className="register-left"
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, ease: easeOut }}>
                     {/* Application Header Logo */}
                     <div className="register-logo-section">
-                        <GraduationCap className="logo-icon" size={28} />
-                        <span className="college-name">College Placement Portal</span>
+                        <GraduationCap className="logo-icon" size={28} style={{ color: '#2563eb' }} />
+                        <span className="college-name" style={{ fontSize: '1.25rem', fontWeight: '800', color: '#2563eb' }}>Campus_Hire</span>
                     </div>
 
                     {/* Dashboard Glassmorphic Illustration */}
@@ -478,12 +599,15 @@ function Registration({ onNavigate }) {
                         <p>"College Placement Portal helped me land my offer at Infosys within 2 weeks of registering."</p>
                         <span className="author">- John Doe, BCA Final Year, Batch 2026</span>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* RIGHT SIDE PANEL: Sign Up Form Area */}
-                <div className="register-right">
+                <motion.div className="register-right"
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}>
                     {/* Back to Home Button */}
-                    <button className="btn-back-home" onClick={() => onNavigate('landing')}>
+                    <button type="button" className="btn-back-home" onClick={() => onNavigate('landing')}>
                         <ArrowLeft size={16} />
                         Back to Home
                     </button>
@@ -497,10 +621,11 @@ function Registration({ onNavigate }) {
                         <form onSubmit={handleSubmit} className="form-grid">
                             {/* Full Name */}
                             <div className="input-group">
-                                <label>Full Name</label>
+                                <label htmlFor="fullnameInput">Full Name</label>
                                 <div className={`input-wrapper ${errors.fullname ? 'has-error' : ''}`}>
                                     <User size={16} />
                                     <input
+                                        id="fullnameInput"
                                         type="text"
                                         name="fullname"
                                         placeholder="Priya Sharma"
@@ -514,10 +639,11 @@ function Registration({ onNavigate }) {
 
                             {/* Email Address */}
                             <div className="input-group">
-                                <label>Email Address</label>
+                                <label htmlFor="emailInput">Email Address</label>
                                 <div className={`input-wrapper ${errors.email ? 'has-error' : ''}`}>
                                     <Mail size={16} />
                                     <input
+                                        id="emailInput"
                                         type="email"
                                         name="email"
                                         placeholder="priya@college.edu.in"
@@ -531,10 +657,11 @@ function Registration({ onNavigate }) {
 
                             {/* Mobile Number */}
                             <div className="input-group">
-                                <label>Mobile Number</label>
+                                <label htmlFor="mobileInput">Mobile Number</label>
                                 <div className={`input-wrapper ${errors.mobile ? 'has-error' : ''}`}>
                                     <Phone size={16} />
                                     <input
+                                        id="mobileInput"
                                         type="tel"
                                         name="mobile"
                                         placeholder="8765443789"
@@ -548,10 +675,12 @@ function Registration({ onNavigate }) {
 
                             {/* Date of Birth */}
                             <div className="input-group">
-                                <label>Date of Birth (DOB)</label>
+                                <label htmlFor="dobPickerBtn">Date of Birth (DOB)</label>
                                 <div className={`input-wrapper ${errors.dob ? 'has-error' : ''}`} ref={dobDatePickerRef} style={{ position: 'relative', overflow: 'visible', border: 'none', padding: 0 }}>
+                                    <input id="dobInput" type="text" name="dob" value={formData.dob} onChange={handleChange} style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', pointerEvents: 'none' }} tabIndex={-1} />
                                     <div className="custom-date-picker-container" style={{ width: '100%' }}>
                                         <button
+                                            id="dobPickerBtn"
                                             type="button"
                                             className="date-picker-trigger"
                                             onClick={() => setIsDobPickerOpen(!isDobPickerOpen)}
@@ -570,7 +699,7 @@ function Registration({ onNavigate }) {
                                                     <span>
                                                         <select
                                                             value={dobCalDate.getMonth()}
-                                                            onChange={(e) => setDobCalDate(new Date(dobCalDate.getFullYear(), parseInt(e.target.value), 1))}
+                                                            onChange={(e) => setDobCalDate(new Date(dobCalDate.getFullYear(), Number.parseInt(e.target.value), 1))}
                                                             className="calendar-select"
                                                             style={{ border: 'none', background: 'transparent', fontWeight: 'bold', fontSize: '0.8125rem', outline: 'none', cursor: 'pointer' }}
                                                         >
@@ -583,7 +712,7 @@ function Registration({ onNavigate }) {
                                                         </select>
                                                         <select
                                                             value={dobCalDate.getFullYear()}
-                                                            onChange={(e) => setDobCalDate(new Date(parseInt(e.target.value), dobCalDate.getMonth(), 1))}
+                                                            onChange={(e) => setDobCalDate(new Date(Number.parseInt(e.target.value), dobCalDate.getMonth(), 1))}
                                                             className="calendar-select"
                                                             style={{ border: 'none', background: 'transparent', fontWeight: 'bold', fontSize: '0.8125rem', outline: 'none', cursor: 'pointer', marginLeft: '4px' }}
                                                         >
@@ -601,20 +730,27 @@ function Registration({ onNavigate }) {
                                                 </div>
                                                 <div className="calendar-days">
                                                     {/* Render empty cells for padding */}
-                                                    {Array.from({ length: dobFirstDayIndex }).map((_, i) => (
-                                                        <span key={`empty-${i}`} className="empty-day"></span>
+                                                    {Array.from({ length: dobFirstDayIndex }, (_, i) => `empty-${dobCalDate.getFullYear()}-${dobCalDate.getMonth()}-${i}`).map((slotKey) => (
+                                                        <span key={slotKey} className="empty-day"></span>
                                                     ))}
                                                     {/* Render month days */}
                                                     {Array.from({ length: dobTotalDays }).map((_, i) => {
                                                         const day = i + 1;
                                                         const dateStr = `${dobCalDate.getFullYear()}-${String(dobCalDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                                                         const isSelected = formData.dob === dateStr;
+                                                        const today = new Date();
+                                                        today.setHours(0, 0, 0, 0);
+                                                        const thisDate = new Date(dobCalDate.getFullYear(), dobCalDate.getMonth(), day);
+                                                        const isFuture = thisDate > today;
+
                                                         return (
                                                             <button
                                                                 type="button"
                                                                 key={day}
-                                                                className={`calendar-day-btn ${isSelected ? 'selected' : ''}`}
+                                                                disabled={isFuture}
+                                                                className={`calendar-day-btn ${isSelected ? 'selected' : ''} ${isFuture ? 'disabled-past-day' : ''}`}
                                                                 onClick={() => {
+                                                                    if (isFuture) return;
                                                                     setFormData(prev => ({ ...prev, dob: dateStr }));
                                                                     const fieldError = validateField('dob', dateStr);
                                                                     setErrors(prev => ({ ...prev, dob: fieldError }));
@@ -626,16 +762,8 @@ function Registration({ onNavigate }) {
                                                         );
                                                     })}
                                                 </div>
-                                                <div className="calendar-footer">
+                                                <div className="calendar-footer" style={{ justifyContent: 'flex-end' }}>
                                                     <button type="button" className="calendar-clear-btn" onClick={() => { setFormData(prev => ({ ...prev, dob: '' })); const fieldError = validateField('dob', ''); setErrors(prev => ({ ...prev, dob: fieldError })); setIsDobPickerOpen(false); }}>Clear</button>
-                                                    <button type="button" className="calendar-today-btn" onClick={() => {
-                                                        const today = new Date();
-                                                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                                                        setFormData(prev => ({ ...prev, dob: todayStr }));
-                                                        const fieldError = validateField('dob', todayStr);
-                                                        setErrors(prev => ({ ...prev, dob: fieldError }));
-                                                        setIsDobPickerOpen(false);
-                                                    }}>Today</button>
                                                 </div>
                                             </div>
                                         )}
@@ -646,17 +774,19 @@ function Registration({ onNavigate }) {
 
                             {/* Department Selector */}
                             <div className="input-group full-width">
-                                <label>Department</label>
+                                <label htmlFor="departmentSelect">Department</label>
                                 <div className={`input-wrapper ${errors.department ? 'has-error' : ''}`}>
                                     <BookOpen size={16} />
                                     <select
+                                        id="departmentSelect"
                                         name="department"
                                         value={formData.department}
                                         onChange={handleChange}
                                         required
                                     >
                                         <option value="" disabled hidden>Select Department</option>
-                                        <option value="Computer Science and Applications">Computer Science and Applications</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Computer Applications">Computer Applications</option>
                                     </select>
                                 </div>
                                 {errors.department && <span className="error-message">{errors.department}</span>}
@@ -664,10 +794,11 @@ function Registration({ onNavigate }) {
 
                             {/* Course Selector */}
                             <div className="input-group">
-                                <label>Course</label>
+                                <label htmlFor="courseSelect">Course</label>
                                 <div className={`input-wrapper ${errors.course ? 'has-error' : ''}`}>
                                     <CourseIcon size={16} />
                                     <select
+                                        id="courseSelect"
                                         name="course"
                                         value={formData.course}
                                         onChange={handleChange}
@@ -678,6 +809,7 @@ function Registration({ onNavigate }) {
                                         <option value="MCA">MCA</option>
                                         <option value="Bsc Cs">Bsc Cs</option>
                                         <option value="Bsc IT">Bsc IT</option>
+                                        <option value="MSc">MSc</option>
                                     </select>
                                 </div>
                                 {errors.course && <span className="error-message">{errors.course}</span>}
@@ -685,10 +817,11 @@ function Registration({ onNavigate }) {
 
                             {/* Year Selector */}
                             <div className="input-group">
-                                <label>Current Year</label>
+                                <label htmlFor="yearSelect">Current Year</label>
                                 <div className={`input-wrapper ${errors.year ? 'has-error' : ''}`}>
                                     <Calendar size={16} />
                                     <select
+                                        id="yearSelect"
                                         name="year"
                                         value={formData.year}
                                         onChange={handleChange}
@@ -706,10 +839,11 @@ function Registration({ onNavigate }) {
 
                             {/* CGPA */}
                             <div className="input-group full-width">
-                                <label>CGPA</label>
+                                <label htmlFor="cgpaInput">CGPA</label>
                                 <div className={`input-wrapper ${errors.cgpa ? 'has-error' : ''}`}>
                                     <Award size={16} />
                                     <input
+                                        id="cgpaInput"
                                         type="number"
                                         step="0.01"
                                         min="0"
@@ -725,35 +859,91 @@ function Registration({ onNavigate }) {
                             </div>
 
                             {/* Password */}
-                            <div className="input-group">
-                                <label>Password</label>
-                                <div className={`input-wrapper ${errors.password ? 'has-error' : ''}`}>
+                            <div className="input-group password-input-group" ref={passwordWrapperRef}>
+                                <label htmlFor="passwordInput">Password</label>
+                                <div className={`input-wrapper ${errors.password && !isPasswordFocused ? 'has-error' : ''}`}>
                                     <Lock size={16} />
                                     <input
-                                        type="password"
+                                        id="passwordInput"
+                                        type={showPassword ? "text" : "password"}
                                         name="password"
                                         placeholder="Min. 8 characters"
                                         value={formData.password}
                                         onChange={handleChange}
+                                        onFocus={() => setIsPasswordFocused(true)}
+                                        style={{ paddingRight: '38px' }}
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        className="btn-toggle-eye"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        tabIndex={-1}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
                                 </div>
-                                {errors.password && <span className="error-message">{errors.password}</span>}
+                                {errors.password && !isPasswordFocused && <span className="error-message">{errors.password}</span>}
+
+                                {/* Password Strength Popover Checklist */}
+                                {isPasswordFocused && (
+                                    <div className="password-strength-popover">
+                                        <div className="strength-header">
+                                            <span className={`strength-title ${strengthTheme}`}>{strengthLabel}</span>
+                                            <div className="strength-meter-bars">
+                                                <div className={`meter-segment ${pwdScore >= 1 ? strengthTheme : ''}`}></div>
+                                                <div className={`meter-segment ${pwdScore >= 2 ? strengthTheme : ''}`}></div>
+                                                <div className={`meter-segment ${pwdScore >= 4 ? strengthTheme : ''}`}></div>
+                                            </div>
+                                        </div>
+                                        <p className="strength-subtitle">It's better to have:</p>
+                                        <ul className="strength-checklist">
+                                            <li className={pwdRules.length ? 'rule-satisfied' : ''}>
+                                                {pwdRules.length ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                <span>At least 8 characters</span>
+                                            </li>
+                                            <li className={pwdRules.hasUpperLower ? 'rule-satisfied' : ''}>
+                                                {pwdRules.hasUpperLower ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                <span>Uppercase and lowercase letters</span>
+                                            </li>
+                                            <li className={pwdRules.hasNumber ? 'rule-satisfied' : ''}>
+                                                {pwdRules.hasNumber ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                <span>Numbers</span>
+                                            </li>
+                                            <li className={pwdRules.hasSymbol ? 'rule-satisfied' : ''}>
+                                                {pwdRules.hasSymbol ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                                                <span>Symbols (#$&)</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Confirm Password */}
                             <div className="input-group">
-                                <label>Confirm Password</label>
+                                <label htmlFor="confirmPasswordInput">Confirm Password</label>
                                 <div className={`input-wrapper ${errors.confirmPassword ? 'has-error' : ''}`}>
                                     <Lock size={16} />
                                     <input
-                                        type="password"
+                                        id="confirmPasswordInput"
+                                        type={showConfirmPassword ? "text" : "password"}
                                         name="confirmPassword"
                                         placeholder="Re-enter password"
                                         value={formData.confirmPassword}
                                         onChange={handleChange}
+                                        style={{ paddingRight: '38px' }}
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        className="btn-toggle-eye"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        tabIndex={-1}
+                                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                                    >
+                                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
                                 </div>
                                 {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
                             </div>
@@ -767,14 +957,14 @@ function Registration({ onNavigate }) {
 
                         <div className="form-bottom-link">
                             Already have an account?{''}
-                            <span className="link-span" onClick={() => onNavigate('login')}> Sign In</span>
+                            <button type="button" className="link-span" onClick={() => onNavigate('login')}> Sign In</button>
                         </div>
                     </div>
 
                     <div className="form-footer-copyright">
-                        © 2026 College Placement Portal
+                        © 2026 Campus_Hire
                     </div>
-                </div>
+                </motion.div>
             </div>
             {/* TOAST NOTIFICATION COMPONENT */}
             {showToast && (

@@ -335,7 +335,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #10b981;
+    color: #022c22;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -572,6 +572,25 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+.btn-toggle-eye {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.btn-toggle-eye:hover {
+    color: #2563eb;
+}
+
 
 
 .btn-submit-register {
@@ -606,6 +625,10 @@
     color: #2563eb;
     font-weight: 600;
     cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
 }
 
 .form-bottom-link .link-span:hover {
@@ -682,8 +705,8 @@
 
 .input-wrapper.has-error input,
 .input-wrapper.has-error select {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 @keyframes fadeInError {
@@ -699,25 +722,26 @@
 }
 
 /*Toast Notification Styling*/
-.register-container .toast-notification,
 .register-page .toast-notification {
     position: fixed;
     top: 24px;
+    bottom: auto;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(16, 185, 129, 0.25);
     border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+    padding: 14px 20px;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
     display: flex;
     flex-direction: column;
     gap: 8px;
     z-index: 9999;
-    min-width: 320px;
+    min-width: 280px;
     max-width: 420px;
+    height: auto;
     overflow: hidden;
     animation: slideInDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -914,6 +938,18 @@
     box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
 }
 
+.calendar-day-btn.disabled-past-day,
+.calendar-day-btn:disabled {
+    opacity: 0.35;
+    filter: blur(0.4px);
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+    pointer-events: none;
+    text-decoration: line-through;
+}
+
+
 .empty-day {
     height: 28px;
     width: 28px;
@@ -954,4 +990,203 @@
 
 .calendar-today-btn:hover {
     background-color: #eff6ff;
+}
+
+/* Password Strength Checklist Popover (Proton Style - Wide 2x2 Grid) */
+.password-input-group {
+    position: relative;
+}
+
+.password-strength-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: calc(200% + 16px);
+    max-width: 480px;
+    min-height: 130px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+    z-index: 99;
+    animation: popoverFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+    .password-strength-popover {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.strength-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.strength-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.strength-title.weak {
+    color: #ef4444;
+}
+
+.strength-title.medium {
+    color: #d97706;
+}
+
+.strength-title.strong {
+    color: #10b981;
+}
+
+.strength-meter-bars {
+    display: flex;
+    gap: 4px;
+    width: 90px;
+    height: 5px;
+}
+
+.meter-segment {
+    flex: 1;
+    height: 100%;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.meter-segment.weak {
+    background-color: #ef4444;
+}
+
+.meter-segment.medium {
+    background-color: #d97706;
+}
+
+.meter-segment.strong {
+    background-color: #10b981;
+}
+
+.strength-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.strength-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 10px 16px;
+}
+
+@media (max-width: 480px) {
+    .strength-checklist {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
+
+.strength-checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.78125rem;
+    line-height: 1.35;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.strength-checklist li svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: #cbd5e1;
+    transition: color 0.2s ease;
+}
+
+.strength-checklist li.rule-satisfied {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.strength-checklist li.rule-satisfied svg {
+    color: #7c3aed; /* Proton purple check mark */
+}
+
+/* Mobile styles */
+@media screen and (max-width: 768px) {
+    .registration-container,
+    .reg-container {
+        flex-direction: column;
+        padding: 16px 12px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        padding: 14px;
+    }
+
+    .form-grid .full-width {
+        grid-column: span 1;
+    }
+
+    .stepper-wrapper {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .stepper-item {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
+
+    .reg-actions,
+    .form-navigation-actions {
+        flex-direction: column-reverse;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .reg-actions button,
+    .form-navigation-actions button {
+        width: 100%;
+    }
+
+    .custom-calendar-popup {
+        width: calc(100vw - 48px);
+        max-width: 300px;
+        left: 50%;
+        transform: translateX(-50%);
+        box-sizing: border-box;
+    }
+
+
+    .calendar-header select.calendar-select {
+        font-size: 0.75rem;
+        padding: 4px 6px;
+        max-width: 100px;
+    }
 }
