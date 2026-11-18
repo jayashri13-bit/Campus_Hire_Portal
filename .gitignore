@@ -14,9 +14,10 @@ backend/__pycache__/
 campushire.db
 
 # Node / Frontend
+Frontend/node_modules/
+Frontend/dist/
 Campus_Hire_Frontend/node_modules/
 Campus_Hire_Frontend/dist/
-frontend/
 
 # OS / IDE
 .DS_Store
