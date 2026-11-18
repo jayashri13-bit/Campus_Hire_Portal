@@ -632,12 +632,47 @@ export const getAllQueries = async () => {
             {
                 id: 1,
                 name: "Rahul Patil",
-                course: "B.Tech Computer Science",
-                title: "Interview Schedule Clarification",
-                message: "When will the technical interview round for Google be scheduled?",
+                studentName: "Rahul Patil",
+                course: "B.Sc Computer Science",
+                department: "B.Sc Computer Science",
+                title: "Resume not uploading",
+                subject: "Resume not uploading",
+                message: "I am unable to upload my resume. It shows error please help me resolve this issue.",
+                description: "I am unable to upload my resume. It shows error please help me resolve this issue.",
+                date: "2 May 2026",
+                status: "resolved",
+                reply: "Please clear your browser cache and upload a PDF under 5MB. Contact support if it persists.",
+                adminReply: "Please clear your browser cache and upload a PDF under 5MB. Contact support if it persists."
+            },
+            {
+                id: 2,
+                name: "Sneha Jadhav",
+                studentName: "Sneha Jadhav",
+                course: "BCA",
+                department: "BCA",
+                title: "Profile strength calculation",
+                subject: "Profile strength calculation",
+                message: "How is profile strength calculated? I want to improve my score.",
+                description: "How is profile strength calculated? I want to improve my score.",
+                date: "1 May 2026",
+                status: "resolved",
+                reply: "Profile strength score increases as you fill in your academic details, skills, and upload a verified resume.",
+                adminReply: "Profile strength score increases as you fill in your academic details, skills, and upload a verified resume."
+            },
+            {
+                id: 3,
+                name: "Amit Mane",
+                studentName: "Amit Mane",
+                course: "B.Tech IT",
+                department: "B.Tech IT",
+                title: "Technical Round Timing",
+                subject: "Technical Round Timing",
+                message: "What is the reporting time for the Google technical round on campus?",
+                description: "What is the reporting time for the Google technical round on campus?",
                 date: "Today",
-                status: "pending",
-                reply: ""
+                status: "resolved",
+                reply: "Please report to Room 302 by 9:30 AM with your college ID.",
+                adminReply: "Please report to Room 302 by 9:30 AM with your college ID."
             }
         ]
     };

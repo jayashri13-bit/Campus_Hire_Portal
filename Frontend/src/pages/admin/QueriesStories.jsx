@@ -193,18 +193,19 @@ function mapApiDriveToUi(d) {
 
 /** Maps backend story object to UI story object. */
 function mapApiStoryToUi(s) {
-    const avatarUrl = s.photoPath || 'https://via.placeholder.com/150';
+    const avatarUrl = s.avatar || s.photoPath || 'https://via.placeholder.com/150';
     return {
+        ...s,
         id: s.id,
-        name: s.studentName,
+        name: s.name || s.studentName || 'Student',
         avatar: avatarUrl,
-        company: s.companyName,
-        companyColor: '#eff6ff',
-        companyTextColor: '#2563eb',
-        role: s.jobRole || 'Placed Student',
-        packageAmt: s.packageLpa ? `${s.packageLpa} LPA` : '6.0 LPA',
-        storyText: s.successStory || `Secured placement at ${s.companyName}.`,
-        date: parseCreatedAt(s.createdAt)
+        company: s.company || s.companyName || 'Company',
+        companyColor: s.companyColor || '#eff6ff',
+        companyTextColor: s.companyTextColor || '#2563eb',
+        role: s.role || s.jobRole || 'Placed Student',
+        packageAmt: s.packageAmt || (s.packageLpa ? `${s.packageLpa} LPA` : '6.0 LPA'),
+        storyText: s.storyText || s.successStory || `Secured placement at ${s.company || s.companyName}.`,
+        date: s.date || parseCreatedAt(s.createdAt)
     };
 }
 
@@ -306,18 +307,19 @@ export default function QueriesStories() {
             const response = await getAllQueries();
             if (response.data && Array.isArray(response.data)) {
                 const mappedQueries = response.data.map(q => {
+                    const studentName = q.studentName || q.name || "Student";
                     return {
                         ...q,
                         id: q.id,
-                        name: q.studentName,
-                        course: q.department,
-                        avatar: buildQueryAvatar(q.studentName || q.name),
-                        colorClass: 'blue',
-                        title: q.subject,
-                        message: q.description,
+                        name: studentName,
+                        course: q.department || q.course || "B.Tech Computer Science",
+                        avatar: q.avatar || buildQueryAvatar(studentName),
+                        colorClass: q.colorClass || 'blue',
+                        title: q.subject || q.title || "Placement Support Query",
+                        message: q.description || q.message || "",
                         status: (q.status || 'pending').toLowerCase(),
-                        reply: q.adminReply,
-                        date: parseCreatedAt(q.createdAt)
+                        reply: q.adminReply || q.reply || "",
+                        date: q.date || parseCreatedAt(q.createdAt)
                     };
                 });
                 setQueries(mappedQueries.toSorted((a, b) => b.id - a.id));
