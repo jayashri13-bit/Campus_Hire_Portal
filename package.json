@@ -1,4 +1,9 @@
 {
+  "name": "campus-hire-portal",
+  "private": true,
+  "scripts": {
+    "build": "cd Frontend && npm install && npm run build"
+  },
   "dependencies": {
     "@neon/config": "^1.13.0",
     "@neon/env": "^2.1.0"
