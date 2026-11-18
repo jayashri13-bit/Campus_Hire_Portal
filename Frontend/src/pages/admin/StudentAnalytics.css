@@ -170,21 +170,21 @@
 
 /* Stat Grid Container */
 .analytics-page-wrapper .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 24px !important;
+    width: 100% !important;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
     .analytics-page-wrapper .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr) !important;
     }
 }
 
 @media (max-width: 640px) {
     .analytics-page-wrapper .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
@@ -306,7 +306,8 @@
     border: 1px solid #f1f5f9;
     border-top: 3px solid transparent;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    height: 400px;
+    min-height: 380px;
+    height: auto;
     display: flex;
     flex-direction: column;
 }
@@ -340,12 +341,13 @@
     margin: 0;
 }
 
-/* dept chart body - flex row holding the donut and legend side by side */
+/* dept chart body - flex row holding the donut and legend */
 .dept-chart-body {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 20px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
 }
 
 /* donut chart svg and its segments */

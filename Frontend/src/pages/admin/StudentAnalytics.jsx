@@ -75,6 +75,42 @@ const COMPANY_LOGOS = {
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
         </svg>
+    ),
+    TCS: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#003366" />
+            <text x="12" y="16.5" fontSize="9.5" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">TCS</text>
+        </svg>
+    ),
+    Wipro: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#5c2d91" />
+            <text x="12" y="17" fontSize="13" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">W</text>
+        </svg>
+    ),
+    Cognizant: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#0033a0" />
+            <text x="12" y="17" fontSize="13" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">C</text>
+        </svg>
+    ),
+    Accenture: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#a100ff" />
+            <path d="M9 7l6 5-6 5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+    ),
+    Meta: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#0081fb" />
+            <path d="M12 14c-1.5 2-3 2-4 1-1.3-1.3-.9-4 1-4 1.5 0 2.5 2 3 3zm0 0c1.5 2 3 2 4 1 1.3-1.3.9-4-1-4-1.5 0-2.5 2-3 3z" stroke="#ffffff" strokeWidth="1.6" fill="none" />
+        </svg>
+    ),
+    Netflix: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#141414" />
+            <path d="M8 5v14l4-8v8l4-14" stroke="#e50914" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
     )
 };
 
@@ -84,13 +120,11 @@ function getCompanyBadgeColor(name) {
     for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const colors = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0284c7', '#be185d', '#4f46e5'];
+    const colors = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0284c7', '#be185d', '#4f46e5', '#0891b2', '#0d9488'];
     return colors[Math.abs(hash) % colors.length];
 }
 
 function CompanyLogo({ companyName }) {
-    const [imgError, setImgError] = useState(false);
-
     if (!companyName) {
         return <Building2 size={16} color="#2563eb" style={{ marginRight: '8px', flexShrink: 0 }} />;
     }
@@ -104,28 +138,29 @@ function CompanyLogo({ companyName }) {
         return COMPANY_LOGOS[svgKey];
     }
 
+    // 2. Instant resilient letter badge (zero network delay, zero broken images, crisp rendering)
     const initialLetter = trimmed.charAt(0).toUpperCase() || '?';
     const badgeColor = getCompanyBadgeColor(trimmed);
 
-    // 2. Initial letter badge fallback if image fails to load
-    if (imgError) {
-        return (
-            <div style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: badgeColor, color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: '700', marginRight: 8, flexShrink: 0, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                {initialLetter}
-            </div>
-        );
-    }
-
-    const domainName = normalized.replace(/[^a-z0-9]/g, '');
-    const logoUrl = `https://www.google.com/s2/favicons?domain=${domainName}.com&sz=64`;
-
     return (
-        <img
-            src={logoUrl}
-            alt={trimmed}
-            onError={() => setImgError(true)}
-            style={{ width: 18, height: 18, marginRight: 8, borderRadius: 4, objectFit: 'contain', flexShrink: 0 }}
-        />
+        <div style={{
+            width: 20,
+            height: 20,
+            borderRadius: 5,
+            backgroundColor: badgeColor,
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 11,
+            fontWeight: '700',
+            marginRight: 8,
+            flexShrink: 0,
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+        }}>
+            {initialLetter}
+        </div>
     );
 }
 
@@ -682,7 +717,7 @@ export default function StudentAnalytics() {
                         <span className="stat-subtext">Total placed this year</span>
                     </div>
                     <div className="stat-icon-container bg-light-blue">
-                        <Users size={22} />
+                        <Users size={22} color="#1e40af" />
                     </div>
                 </motion.div>
 
@@ -696,7 +731,7 @@ export default function StudentAnalytics() {
                         <span className="stat-subtext">% of eligible students placed</span>
                     </div>
                     <div className="stat-icon-container bg-light-green">
-                        <TrendingUp size={22} />
+                        <TrendingUp size={22} color="#047857" />
                     </div>
                 </motion.div>
 
@@ -714,7 +749,7 @@ export default function StudentAnalytics() {
                         <span className="stat-subtext">Top package offered</span>
                     </div>
                     <div className="stat-icon-container bg-light-orange">
-                        <Trophy size={22} />
+                        <Trophy size={22} color="#b45309" />
                     </div>
                 </motion.div>
 
@@ -732,7 +767,7 @@ export default function StudentAnalytics() {
                         <span className="stat-subtext">Average package offered</span>
                     </div>
                     <div className="stat-icon-container bg-light-purple">
-                        <Wallet size={22} />
+                        <Wallet size={22} color="#6d28d9" />
                     </div>
                 </motion.div>
             </section>

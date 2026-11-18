@@ -287,33 +287,102 @@ function updateAdminPasswordInStorage(adminEmail, newPassword) {
     localStorage.setItem('admin_profiles', JSON.stringify(updatedAdmins));
 }
 
-/** Returns a favicon-based company logo element with a fallback initial letter. */
+const ADMIN_COMPANY_LOGOS = {
+    Google: (
+        <svg viewBox="0 0 24 24" width="22" height="22">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+        </svg>
+    ),
+    Microsoft: (
+        <svg viewBox="0 0 23 23" width="20" height="20">
+            <rect x="0" y="0" width="10.5" height="10.5" fill="#f25022" />
+            <rect x="11.5" y="0" width="10.5" height="10.5" fill="#7fba00" />
+            <rect x="0" y="11.5" width="10.5" height="10.5" fill="#00a4ef" />
+            <rect x="11.5" y="11.5" width="10.5" height="10.5" fill="#ffb900" />
+        </svg>
+    ),
+    Amazon: (
+        <svg viewBox="0 0 24 24" width="22" height="22">
+            <path d="M13.2 13.1c0 1.2-.7 1.8-1.7 1.8-.7 0-1.2-.4-1.2-1.1 0-1.1.9-1.5 2.9-1.5v.8zm2.6 2.3c-.1-.6-.1-1.8-.1-2.5V9.7c0-1.8-1.1-2.7-3.1-2.7-1.7 0-3.1.9-3.4 2l1.1.4c.2-.7.9-1.2 1.9-1.2 1.1 0 1.5.5 1.5 1.4v.6c-2.4.1-4.2.7-4.2 2.7 0 1.3 8 2.2 2.1 2.2 1.2 0 2-.6 2.4-1.3h.1c.1.5.3.9.7 1.2l1-.6z" fill="#000000" />
+            <path d="M5.3 19.3c3.4 2 8 2.5 12 1.6.8-.2 1.5-.5 2.2-1 .3-.2.3-.7-.1-.8-.7-.2-1.5-.1-2.2.1-3.2.7-6.9.4-10-1.2-.4-.2-.7 0-.7.3v1z" fill="#ff9900" />
+        </svg>
+    ),
+    Apple: (
+        <svg viewBox="0 0 170 170" width="20" height="20" fill="#000000">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.07-2.73-2.22-6.49-6.67-11.28-13.37-5.61-7.8-10.28-16.73-13.98-26.8-3.7-10.07-5.56-19.82-5.56-29.24 0-14.6 3.63-26.6 10.89-35.97 7.26-9.37 16.57-14.06 27.93-14.06 4.96 0 10.59 1.45 16.89 4.36 6.3 2.9 10.84 4.36 13.62 4.36 2.03 0 6.38-1.39 13.06-4.16 6.68-2.78 12.21-4.04 16.58-3.78 15.34.88 26.9 6.64 34.66 17.27-12.28 7.5-18.29 17.72-18.02 30.65.3 10.15 4.14 18.57 11.53 25.26 7.39 6.69 16.14 10.35 26.27 10.99-2.3 6.64-5.34 13.06-9.13 19.26zm-20.28-94.88c0-9.92 3.5-18.51 10.5-25.76 7-7.25 15.31-11.02 24.93-11.3 0.28 9.92-3.3 18.56-10.74 25.92-7.44 7.36-15.72 11.08-24.69 11.14z" />
+        </svg>
+    ),
+    Infosys: (
+        <svg viewBox="0 0 24 24" width="22" height="22">
+            <rect width="24" height="24" rx="6" fill="#0284c7" />
+            <text x="12" y="16" fontSize="13" fontWeight="bold" fill="#ffffff" textAnchor="middle" fontFamily="sans-serif">i</text>
+        </svg>
+    ),
+    TCS: (
+        <svg viewBox="0 0 24 24" width="22" height="22">
+            <rect width="24" height="24" rx="6" fill="#003366" />
+            <text x="12" y="16.5" fontSize="10" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">TCS</text>
+        </svg>
+    ),
+    Wipro: (
+        <svg viewBox="0 0 24 24" width="22" height="22">
+            <rect width="24" height="24" rx="6" fill="#5c2d91" />
+            <text x="12" y="17" fontSize="14" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">W</text>
+        </svg>
+    ),
+    Cognizant: (
+        <svg viewBox="0 0 24 24" width="22" height="22">
+            <rect width="24" height="24" rx="6" fill="#0033a0" />
+            <text x="12" y="17" fontSize="14" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">C</text>
+        </svg>
+    ),
+    Accenture: (
+        <svg viewBox="0 0 24 24" width="22" height="22">
+            <rect width="24" height="24" rx="6" fill="#a100ff" />
+            <path d="M9 7l6 5-6 5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+    )
+};
+
+/** Returns a clean vector company logo element or an instant colorful letter badge. */
 function getCompanyLogo(company) {
-    const domainMap = {
-        'google': 'google.com', 'microsoft': 'microsoft.com', 'amazon': 'amazon.com',
-        'infosys': 'infosys.com', 'tcs': 'tcs.com', 'wipro': 'wipro.com',
-        'cognizant': 'cognizant.com', 'ibm': 'ibm.com', 'accenture': 'accenture.com',
-        'capgemini': 'capgemini.com', 'deloitte': 'deloitte.com', 'oracle': 'oracle.com',
-        'sap': 'sap.com', 'meta': 'meta.com', 'apple': 'apple.com', 'uber': 'uber.com',
-        'flipkart': 'flipkart.com', 'zoho': 'zoho.com', 'freshworks': 'freshworks.com',
-    };
-    const lower = company.toLowerCase().trim();
-    const domain = domainMap[lower] || `${lower.replace(/\s+/g, '')}.com`;
-    const logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-    return (
-        <div style={{ position: 'relative', width: '28px', height: '28px', flexShrink: 0 }}>
-            <img
-                src={logoUrl}
-                alt={company}
-                style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc', padding: '2px', display: 'block' }}
-                onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                }}
-            />
-            <div className="company-logo default-logo" style={{ display: 'none', position: 'absolute', top: 0, left: 0, width: '28px', height: '28px' }}>
-                {company.charAt(0).toUpperCase()}
+    if (!company) {
+        return <Briefcase size={20} color="#2563eb" style={{ flexShrink: 0 }} />;
+    }
+    const trimmed = String(company).trim();
+    const normalized = trimmed.toLowerCase();
+    const svgKey = Object.keys(ADMIN_COMPANY_LOGOS).find(k => k.toLowerCase() === normalized);
+    if (svgKey && ADMIN_COMPANY_LOGOS[svgKey]) {
+        return (
+            <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {ADMIN_COMPANY_LOGOS[svgKey]}
             </div>
+        );
+    }
+    const initialLetter = trimmed.charAt(0).toUpperCase() || '?';
+    let hash = 0;
+    for (let i = 0; i < trimmed.length; i++) hash = trimmed.charCodeAt(i) + ((hash << 5) - hash);
+    const colors = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0284c7', '#be185d', '#4f46e5'];
+    const badgeColor = colors[Math.abs(hash) % colors.length];
+    return (
+        <div style={{
+            width: '28px',
+            height: '28px',
+            borderRadius: '7px',
+            backgroundColor: badgeColor,
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '13px',
+            fontWeight: '700',
+            flexShrink: 0,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+        }}>
+            {initialLetter}
         </div>
     );
 }
@@ -853,14 +922,14 @@ function formatGrowthText(stats, fieldName) {
 
 function AdminStatsGrid({ dashboardStats }) {
     return (
-        <section className='stats-grid'>
+        <section className='admin-stats-grid'>
             <motion.div className='stat-card'
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -5, scale: 1.02 }}
                 transition={{ duration: 0.3 }}>
                 <div className='stat-icon-wrapper blue-icon'>
-                    <FileText size={20} />
+                    <FileText size={20} color="#2563eb" />
                 </div>
                 <div className='stat-details'>
                     <span className='stat-label'>Active Posting</span>
@@ -879,7 +948,7 @@ function AdminStatsGrid({ dashboardStats }) {
                 whileHover={{ y: -5, scale: 1.02 }}
                 transition={{ duration: 0.3 }}>
                 <div className='stat-icon-wrapper green-icon'>
-                    <Users size={20} />
+                    <Users size={20} color="#059669" />
                 </div>
                 <div className='stat-details'>
                     <span className='stat-label'>Total Students</span>
@@ -898,7 +967,7 @@ function AdminStatsGrid({ dashboardStats }) {
                 whileHover={{ y: -5, scale: 1.02 }}
                 transition={{ duration: 0.3 }}>
                 <div className='stat-icon-wrapper purple-icon'>
-                    <Briefcase size={20} />
+                    <Briefcase size={20} color="#7c3aed" />
                 </div>
                 <div className='stat-details'>
                     <span className='stat-label'>Resume Received</span>
@@ -1034,18 +1103,8 @@ function RecentPostingsCard({
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.08, type: "spring", stiffness: 300, damping: 24 }}>
 
-                                <div className='posting-card-logo-wrap'>
-                                    {post.companyName ? (
-                                        <img
-                                            src={post.logoUrl || `https://www.google.com/s2/favicons?domain=${post.companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com&sz=128`}
-                                            alt={post.companyName}
-                                            style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
-                                        />
-                                    ) : (
-                                        <div className='posting-logo-fallback'>
-                                            <Briefcase size={18} />
-                                        </div>
-                                    )}
+                                <div className='posting-card-logo-wrap' style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {getCompanyLogo(post.companyName)}
                                 </div>
 
                                 <div className='posting-card-body'>

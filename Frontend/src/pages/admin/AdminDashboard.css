@@ -49,7 +49,7 @@
 .admin-header {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
     width: 100%;
     background: #ffffff;
     border-bottom: 1px solid #e2e8f0;
@@ -188,9 +188,9 @@
 
 
 /*Stat Cards Styles*/
-.dashboard-main .stats-grid,
-.admin-dashboard-container .stats-grid,
-.stats-grid {
+.dashboard-main .admin-stats-grid,
+.admin-dashboard-container .admin-stats-grid,
+.admin-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
@@ -201,9 +201,9 @@
 
 @media (max-width: 900px) {
 
-    .dashboard-main .stats-grid,
-    .admin-dashboard-container .stats-grid,
-    .stats-grid {
+    .dashboard-main .admin-stats-grid,
+    .admin-dashboard-container .admin-stats-grid,
+    .admin-stats-grid {
         grid-template-columns: 1fr;
     }
 }
