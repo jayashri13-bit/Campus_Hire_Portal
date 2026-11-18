@@ -1,7 +1,7 @@
 import api from "../api/axios";
 
 export const registerStudent = (studentData) => {
-    return api.post("/auth/register/student", studentData);
+    return api.post("/auth/register", studentData);
 };
 
 export const loginStudent = (loginData) => {
@@ -9,7 +9,7 @@ export const loginStudent = (loginData) => {
 };
 
 export const loginAdmin = (adminData) => {
-    return api.post("/auth/admin/login", adminData);
+    return api.post("/auth/login", adminData);
 };
 
 export const saveAuthToken = (rawToken) => {
