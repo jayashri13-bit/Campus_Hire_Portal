@@ -146,21 +146,75 @@ const handleImageError = (e) => {
     }
 };
 
+const STUDENT_COMPANY_LOGOS = {
+    Google: (
+        <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+        </svg>
+    ),
+    Microsoft: (
+        <svg viewBox="0 0 23 23" width="18" height="18">
+            <rect x="0" y="0" width="10.5" height="10.5" fill="#f25022" />
+            <rect x="11.5" y="0" width="10.5" height="10.5" fill="#7fba00" />
+            <rect x="0" y="11.5" width="10.5" height="10.5" fill="#00a4ef" />
+            <rect x="11.5" y="11.5" width="10.5" height="10.5" fill="#ffb900" />
+        </svg>
+    ),
+    Amazon: (
+        <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M13.2 13.1c0 1.2-.7 1.8-1.7 1.8-.7 0-1.2-.4-1.2-1.1 0-1.1.9-1.5 2.9-1.5v.8zm2.6 2.3c-.1-.6-.1-1.8-.1-2.5V9.7c0-1.8-1.1-2.7-3.1-2.7-1.7 0-3.1.9-3.4 2l1.1.4c.2-.7.9-1.2 1.9-1.2 1.1 0 1.5.5 1.5 1.4v.6c-2.4.1-4.2.7-4.2 2.7 0 1.3 8 2.2 2.1 2.2 1.2 0 2-.6 2.4-1.3h.1c.1.5.3.9.7 1.2l1-.6z" fill="#000000" />
+            <path d="M5.3 19.3c3.4 2 8 2.5 12 1.6.8-.2 1.5-.5 2.2-1 .3-.2.3-.7-.1-.8-.7-.2-1.5-.1-2.2.1-3.2.7-6.9.4-10-1.2-.4-.2-.7 0-.7.3v1z" fill="#ff9900" />
+        </svg>
+    ),
+    Apple: (
+        <svg viewBox="0 0 170 170" width="18" height="18" fill="#000000">
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.07-2.73-2.22-6.49-6.67-11.28-13.37-5.61-7.8-10.28-16.73-13.98-26.8-3.7-10.07-5.56-19.82-5.56-29.24 0-14.6 3.63-26.6 10.89-35.97 7.26-9.37 16.57-14.06 27.93-14.06 4.96 0 10.59 1.45 16.89 4.36 6.3 2.9 10.84 4.36 13.62 4.36 2.03 0 6.38-1.39 13.06-4.16 6.68-2.78 12.21-4.04 16.58-3.78 15.34.88 26.9 6.64 34.66 17.27-12.28 7.5-18.29 17.72-18.02 30.65.3 10.15 4.14 18.57 11.53 25.26 7.39 6.69 16.14 10.35 26.27 10.99-2.3 6.64-5.34 13.06-9.13 19.26zm-20.28-94.88c0-9.92 3.5-18.51 10.5-25.76 7-7.25 15.31-11.02 24.93-11.3 0.28 9.92-3.3 18.56-10.74 25.92-7.44 7.36-15.72 11.08-24.69 11.14z" />
+        </svg>
+    ),
+    Infosys: (
+        <svg viewBox="0 0 24 24" width="20" height="20">
+            <rect width="24" height="24" rx="6" fill="#0284c7" />
+            <text x="12" y="16" fontSize="13" fontWeight="bold" fill="#ffffff" textAnchor="middle" fontFamily="sans-serif">i</text>
+        </svg>
+    ),
+    TCS: (
+        <svg viewBox="0 0 24 24" width="20" height="20">
+            <rect width="24" height="24" rx="6" fill="#003366" />
+            <text x="12" y="16.5" fontSize="10" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">TCS</text>
+        </svg>
+    )
+};
+
 function CompanyLogoBadge({ company, logoUrl, logoColor, logoLetter, className = "company-logo-badge" }) {
-    const color = logoColor || '#e2e8f0';
-    const domain = typeof company === 'string' ? company.toLowerCase().replace(/\s+/g, '') : 'company';
+    const trimmed = typeof company === 'string' ? company.trim() : '';
+    const normalized = trimmed.toLowerCase();
+    const svgKey = Object.keys(STUDENT_COMPANY_LOGOS).find(k => k.toLowerCase() === normalized);
+
+    if (svgKey && STUDENT_COMPANY_LOGOS[svgKey]) {
+        return (
+            <div className={className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {STUDENT_COMPANY_LOGOS[svgKey]}
+            </div>
+        );
+    }
+
+    const color = logoColor || '#2563eb';
+    const domain = normalized ? normalized.replace(/\s+/g, '') : 'company';
     const src = logoUrl || `https://www.google.com/s2/favicons?domain=${domain}.com&sz=128`;
-    const letter = logoLetter || (typeof company === 'string' ? company.charAt(0) : 'C');
+    const letter = logoLetter || (trimmed ? trimmed.charAt(0).toUpperCase() : 'C');
 
     return (
-        <div className={className} style={{ borderColor: color }}>
+        <div className={className} style={{ borderColor: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img
                 src={src}
                 alt={company || 'Company'}
                 className="company-logo-img"
                 onError={handleImageError}
             />
-            <span style={{ color, display: 'none' }}>
+            <span style={{ color, display: 'none', fontWeight: 'bold' }}>
                 {letter}
             </span>
         </div>
@@ -169,28 +223,33 @@ function CompanyLogoBadge({ company, logoUrl, logoColor, logoLetter, className =
 
 
 const mapJobData = (job) => {
-    const firstLetter = job.companyName ? job.companyName.charAt(0).toUpperCase() : 'C';
+    if (!job) return null;
+    const company = job.company || job.companyName || "Company";
+    const firstLetter = typeof company === 'string' && company.length > 0 ? company.charAt(0).toUpperCase() : 'C';
 
-    const reqString = job.jobRequirements || job.requirements || job.skillsRequired || "";
-    const requirementsArray = reqString
-        ? reqString.split(/,/).map(req => req.trim()).filter(Boolean)
-        : ["No specific requirements listed"];
+    let requirementsArray = ["No specific requirements listed"];
+    const rawReq = job.jobRequirements || job.requirements || job.skillsRequired;
+    if (Array.isArray(rawReq)) {
+        requirementsArray = rawReq.map(r => String(r).trim()).filter(Boolean);
+    } else if (typeof rawReq === 'string' && rawReq.trim()) {
+        requirementsArray = rawReq.split(/,/).map(r => r.trim()).filter(Boolean);
+    }
 
     return {
         id: job.id,
-        company: job.companyName || job.company,
+        company: company,
         logoLetter: firstLetter,
         logoColor: '#2563eb',
         location: job.location || "Remote",
-        role: job.jobRoleOverview || job.jobRole || job.title,
-        deadline: job.deadline,
+        role: job.jobRoleOverview || job.jobRole || job.title || "Software Engineer",
+        deadline: job.deadline || "2026-07-20",
         requirements: requirementsArray.length > 0 ? requirementsArray : ["No specific requirements listed"],
-        additionalinfo: job.jobRoleOverview || job.jobRole || job.title,
-        degree: job.degree || job.Degree || job.degreeRequired,
-        branch: job.branch || job.Branch || job.branchRequired,
-        minCgpa: job.minCgpa ?? job.MinCgpa ?? job.cgpa,
-        passingYear: job.passingYear || job.PassingYear || job.year,
-        experience: job.experience || job.Experience || job.experienceRequired,
+        additionalinfo: job.jobRoleOverview || job.jobRole || job.title || "Full time opportunity",
+        degree: job.degree || job.Degree || job.degreeRequired || "B.Tech",
+        branch: job.branch || job.Branch || job.branchRequired || "Computer Science",
+        minCgpa: job.minCgpa ?? job.MinCgpa ?? job.cgpa ?? 6.0,
+        passingYear: job.passingYear || job.PassingYear || job.year || "2026",
+        experience: job.experience || job.Experience || job.experienceRequired || "Fresher",
         isApplied: job.applied || job.isApplied || job.hasApplied || false
     };
 };
@@ -1775,25 +1834,80 @@ export default function
         }
     ];
 
-    const [jobs, setJobs] = useState([]);
+    const defaultStudentJobs = [
+        {
+            id: 1,
+            company: "Google",
+            companyName: "Google",
+            title: "Software Developer Intern",
+            jobRole: "Software Developer Intern",
+            jobRoleOverview: "Software Developer Intern",
+            location: "Bangalore, India",
+            deadline: "2026-07-20",
+            requirements: "Strong problem solving skills, DSA, React, Node.js",
+            status: "Active"
+        },
+        {
+            id: 2,
+            company: "Microsoft",
+            companyName: "Microsoft",
+            title: "Data Analyst",
+            jobRole: "Data Analyst",
+            jobRoleOverview: "Data Analyst",
+            location: "Hyderabad, India",
+            deadline: "2026-07-18",
+            requirements: "Python, SQL, Data Visualization, Excel",
+            status: "Active"
+        },
+        {
+            id: 3,
+            company: "Infosys",
+            companyName: "Infosys",
+            title: "SDE Intern",
+            jobRole: "SDE Intern",
+            jobRoleOverview: "SDE Intern",
+            location: "Pune, India",
+            deadline: "2026-07-15",
+            requirements: "Java, C++, Object Oriented Programming, DBMS",
+            status: "Active"
+        }
+    ];
+
+    const [jobs, setJobs] = useState(() => {
+        try {
+            const stored = localStorage.getItem("student_latest_jobs");
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch {}
+        return defaultStudentJobs.map(mapJobData).filter(Boolean);
+    });
 
     const fetchJobs = async () => {
         try {
             const response = await getLatestJobs();
-            let jobList = [];
-            if (response.data) {
-                if (Array.isArray(response.data)) {
-                    jobList = response.data;
-                } else if (response.data.content && Array.isArray(response.data.content)) {
-                    jobList = response.data.content;
-                } else if (response.data.jobs && Array.isArray(response.data.jobs)) {
-                    jobList = response.data.jobs;
+            let rawList = [];
+            if (response) {
+                if (Array.isArray(response)) {
+                    rawList = response;
+                } else if (Array.isArray(response.data)) {
+                    rawList = response.data;
+                } else if (Array.isArray(response.data?.data)) {
+                    rawList = response.data.data;
+                } else if (Array.isArray(response.data?.jobs)) {
+                    rawList = response.data.jobs;
+                } else if (Array.isArray(response.data?.content)) {
+                    rawList = response.data.content;
                 }
             }
 
-            if (jobList.length > 0) {
-                const mappedJobs = jobList.map(mapJobData);
+            if (Array.isArray(rawList) && rawList.length > 0) {
+                const mappedJobs = rawList.map(mapJobData).filter(Boolean);
                 setJobs(mappedJobs);
+                try {
+                    localStorage.setItem("student_latest_jobs", JSON.stringify(mappedJobs));
+                } catch {}
             }
         } catch (error) {
             console.error("Error fetching latest jobs:", error);
