@@ -17,8 +17,33 @@ import {
 import "./StudHub.css";
 
 // Default fallback mock data
-const initialDrives = [];
-const initialStories = [];
+const initialDrives = [
+    {
+        id: 1,
+        company: "Google",
+        role: "Software Developer Intern",
+        location: "Bangalore, India",
+        date: "2026-07-20",
+        time: "10:00 AM",
+        status: "open",
+        venue: "Placement Cell",
+        targetStudent: "all"
+    }
+];
+const initialStories = [
+    {
+        id: 1,
+        name: "Nithisha Yadav",
+        avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+        company: "Thoughtworks",
+        companyColor: "#f3e8ff",
+        companyTextColor: "#8b5cf6",
+        role: "Software Engineer",
+        packageAmt: "8.5 LPA",
+        storyText: "Secured a Software Engineer role at Thoughtworks. The preparation drives helped me refine my technical skills.",
+        date: "10 Apr 2026"
+    }
+];
 const initialStudentQueries = [];
 
 
@@ -140,45 +165,57 @@ const mapDriveData = (d) => {
         targets.push(d.specificStudentName.trim());
     }
 
+    const company = d.company || d.companyName || "Company";
+    const role = d.role || d.jobRole || "Software Developer Intern";
+    const driveDate = d.date || d.driveDate || "2026-07-20";
+    const driveTime = d.time || d.driveTime || "10:00 AM";
+
     return {
         id: d.id,
-        company: d.companyName,
-        role: d.jobRole,
-        location: d.location,
-        date: d.driveDate,
-        time: d.driveTime || 'TBA',
-        venue: d.venue || 'TBA',
-        eligibility: d.eligibilityCriteria || 'Not Specified',
+        company: company,
+        role: role,
+        location: d.location || "Bangalore, India",
+        date: driveDate,
+        time: driveTime,
+        venue: d.venue || 'Placement Cell',
+        eligibility: d.eligibility || d.eligibilityCriteria || 'Standard criteria',
         status: (d.status || 'Upcoming').toLowerCase(),
-        logoLetter: d.companyName ? d.companyName.charAt(0).toUpperCase() : 'C',
+        logoLetter: company.charAt(0).toUpperCase() || 'C',
         logoColor: '#2563eb',
         targetStudent: targets.length > 0 ? targets : 'all'
     };
 };
 
 const mapStoryData = (story) => {
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(story.studentName)}&background=2563eb&color=fff`;
+    const sName = story.name || story.studentName || "Student";
+    const sCompany = story.company || story.companyName || "Thoughtworks";
+    const sRole = story.role || story.jobRole || "Software Engineer";
+    const sPkg = story.packageAmt || (story.packageLpa ? `${story.packageLpa} LPA` : (story.package ? `${story.package} LPA` : "8.5 LPA"));
+    const sText = story.storyText || story.successStory || `Secured a ${sRole} role at ${sCompany}.`;
+    const sDate = story.date || parseAndFormatDate(story.createdAt);
+    const avatarUrl = story.avatar || story.photoPath || `https://ui-avatars.com/api/?name=${encodeURIComponent(sName)}&background=2563eb&color=fff`;
+
     return {
         id: story.id,
-        name: story.studentName,
-        avatar: story.photoPath || avatarUrl,
-        company: story.companyName,
-        companyColor: '#eff6ff',
-        companyTextColor: '#2563eb',
-        role: story.jobRole,
-        packageAmt: story.packageLpa ? `${story.packageLpa} LPA` : 'Not Disclosed',
-        storyText: story.successStory,
-        date: parseAndFormatDate(story.createdAt)
+        name: sName,
+        avatar: avatarUrl,
+        company: sCompany,
+        companyColor: story.companyColor || '#eff6ff',
+        companyTextColor: story.companyTextColor || '#2563eb',
+        role: sRole,
+        packageAmt: sPkg,
+        storyText: sText,
+        date: sDate
     };
 };
 
 const mapQueryData = (q) => ({
     id: q.id,
-    title: q.subject,
-    message: q.description,
+    title: q.title || q.subject || "Placement Query",
+    message: q.message || q.description || "",
     status: q.status ? q.status.toLowerCase() : 'pending',
-    reply: q.adminReply || '',
-    date: parseAndFormatDate(q.createdAt)
+    reply: q.reply || q.adminReply || '',
+    date: q.date || parseAndFormatDate(q.createdAt)
 });
 
 
