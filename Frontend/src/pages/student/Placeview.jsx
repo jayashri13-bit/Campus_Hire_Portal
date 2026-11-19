@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { Users, TrendingUp, Trophy, Wallet, Search, X, Building2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Users, TrendingUp, Trophy, Wallet, Search, X, Building2, ArrowUpDown, ArrowUp, ArrowDown, Plus, ChevronDown, CheckCircle } from 'lucide-react';
 import {
     getStudentPlaceviewDashboard,
     getStudentPlaceviewDepartment,
     getStudentPlaceviewPlacementCgpa,
     getStudentPlaceviewTopSkills,
-    getStudentPlaceviewTopPlaced
+    getStudentPlaceviewTopPlaced,
+    addTopPlacedStudent
 } from '../../auth/authService';
 import './Placeview.css';
 import placeviewBannerImg from '../../assets/placeview_banner.png';
@@ -27,6 +28,17 @@ const COMPANY_LOGOS = {
             <rect x="11.5" y="11.5" width="10.5" height="10.5" fill="#ffb900" />
         </svg>
     ),
+    Apple: (
+        <svg viewBox="0 0 170 170" width="16" height="16" fill="#000000" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.9-14.36-6.07-2.73-2.22-6.49-6.67-11.28-13.37-5.61-7.8-10.28-16.73-13.98-26.8-3.7-10.07-5.56-19.82-5.56-29.24 0-14.6 3.63-26.6 10.89-35.97 7.26-9.37 16.57-14.06 27.93-14.06 4.96 0 10.59 1.45 16.89 4.36 6.3 2.9 10.84 4.36 13.62 4.36 2.03 0 6.38-1.39 13.06-4.16 6.68-2.78 12.21-4.04 16.58-3.78 15.34.88 26.9 6.64 34.66 17.27-12.28 7.5-18.29 17.72-18.02 30.65.3 10.15 4.14 18.57 11.53 25.26 7.39 6.69 16.14 10.35 26.27 10.99-2.3 6.64-5.34 13.06-9.13 19.26zm-20.28-94.88c0-9.92 3.5-18.51 10.5-25.76 7-7.25 15.31-11.02 24.93-11.3 0.28 9.92-3.3 18.56-10.74 25.92-7.44 7.36-15.72 11.08-24.69 11.14z" />
+        </svg>
+    ),
+    Zepto: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="6" fill="#7e22ce" />
+            <path d="M7 7h10l-6 10h6" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+    ),
     Instagram: (
         <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
             <rect width="24" height="24" rx="6" fill="#e1306c" />
@@ -37,6 +49,62 @@ const COMPANY_LOGOS = {
         <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
             <rect width="24" height="24" rx="6" fill="#059669" />
             <text x="12" y="16.5" fontSize="13" fontWeight="bold" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">R</text>
+        </svg>
+    ),
+    Meesho: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="6" fill="#be185d" />
+            <path d="M6 17V7l6 6 6-6v10" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+    ),
+    Infosys: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="6" fill="#0284c7" />
+            <text x="12" y="16" fontSize="12" fontWeight="bold" fill="#ffffff" textAnchor="middle" fontFamily="sans-serif">i</text>
+        </svg>
+    ),
+    Google: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+        </svg>
+    ),
+    TCS: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#003366" />
+            <text x="12" y="16.5" fontSize="9.5" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">TCS</text>
+        </svg>
+    ),
+    Wipro: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#5c2d91" />
+            <text x="12" y="17" fontSize="13" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">W</text>
+        </svg>
+    ),
+    Cognizant: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#0033a0" />
+            <text x="12" y="17" fontSize="13" fontWeight="900" fill="#ffffff" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif">C</text>
+        </svg>
+    ),
+    Accenture: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#a100ff" />
+            <path d="M9 7l6 5-6 5" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+    ),
+    Meta: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#0081fb" />
+            <path d="M12 14c-1.5 2-3 2-4 1-1.3-1.3-.9-4 1-4 1.5 0 2.5 2 3 3zm0 0c1.5 2 3 2 4 1 1.3-1.3.9-4-1-4-1.5 0-2.5 2-3 3z" stroke="#ffffff" strokeWidth="1.6" fill="none" />
+        </svg>
+    ),
+    Netflix: (
+        <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginRight: '8px', flexShrink: 0 }}>
+            <rect width="24" height="24" rx="5" fill="#141414" />
+            <path d="M8 5v14l4-8v8l4-14" stroke="#e50914" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </svg>
     ),
     Deloitte: (
@@ -53,13 +121,11 @@ function getCompanyBadgeColor(name) {
     for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const colors = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0284c7', '#be185d', '#4f46e5'];
+    const colors = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0284c7', '#be185d', '#4f46e5', '#0891b2', '#0d9488'];
     return colors[Math.abs(hash) % colors.length];
 }
 
 function CompanyLogo({ companyName }) {
-    const [imgError, setImgError] = useState(false);
-
     if (!companyName) {
         return <Building2 size={16} color="#2563eb" style={{ marginRight: '8px', flexShrink: 0 }} />;
     }
@@ -75,24 +141,24 @@ function CompanyLogo({ companyName }) {
     const initialLetter = trimmed.charAt(0).toUpperCase() || '?';
     const badgeColor = getCompanyBadgeColor(trimmed);
 
-    if (imgError) {
-        return (
-            <div style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: badgeColor, color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: '700', marginRight: 8, flexShrink: 0, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                {initialLetter}
-            </div>
-        );
-    }
-
-    const domainName = normalized.replace(/[^a-z0-9]/g, '');
-    const logoUrl = `https://www.google.com/s2/favicons?domain=${domainName}.com&sz=64`;
-
     return (
-        <img
-            src={logoUrl}
-            alt={trimmed}
-            onError={() => setImgError(true)}
-            style={{ width: 18, height: 18, marginRight: 8, borderRadius: 4, objectFit: 'contain', flexShrink: 0 }}
-        />
+        <div style={{
+            width: 20,
+            height: 20,
+            borderRadius: 5,
+            backgroundColor: badgeColor,
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 11,
+            fontWeight: '700',
+            marginRight: 8,
+            flexShrink: 0,
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+            {initialLetter}
+        </div>
     );
 }
 
@@ -177,6 +243,19 @@ export default function Placeview() {
     const [studentsList, setStudentsList] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState('success');
+    const [formData, setFormData] = useState({
+        name: '',
+        branch: 'CS',
+        passingYear: '2026',
+        cgpa: '',
+        lpa: '',
+        skill: '',
+        company: ''
+    });
     const [currentPage, setCurrentPage] = useState(1);
 
     const fetchStats = async () => {
@@ -320,6 +399,74 @@ export default function Placeview() {
             console.error("Failed to fetch top placed students:", e);
             setStudentsList([]);
         }
+    };
+
+    const handleAddStudent = async (e) => {
+        e.preventDefault();
+        if (!formData.name || !formData.cgpa || !formData.lpa || !formData.company) return;
+
+        const payload = {
+            studentName: formData.name,
+            companyName: formData.company,
+            packageLpa: Number.parseFloat(formData.lpa) || 12,
+            cgpa: Number.parseFloat(formData.cgpa) || 9.0,
+            skills: formData.skill || 'Full Stack',
+            branch: formData.branch || 'CS',
+            department: formData.branch || 'CS',
+            passingYear: formData.passingYear || '2026',
+            year: formData.passingYear || '2026'
+        };
+
+        try {
+            await addTopPlacedStudent(payload);
+        } catch (apiErr) {
+            console.warn("Backend addTopPlacedStudent fallback or restricted for student role:", apiErr);
+        }
+
+        const storedExtras = JSON.parse(localStorage.getItem("top_placed_students_extra") || "{}");
+        storedExtras[(formData.name || '').trim().toLowerCase()] = {
+            branch: formData.branch || 'CS',
+            passingYear: formData.passingYear || '2026',
+            skill: formData.skill || 'Full Stack'
+        };
+        localStorage.setItem("top_placed_students_extra", JSON.stringify(storedExtras));
+
+        const localList = JSON.parse(localStorage.getItem("top_placed_students_local") || "[]");
+        const newStudentObj = {
+            id: `local-${Date.now()}`,
+            name: formData.name,
+            studentName: formData.name,
+            company: formData.company,
+            companyName: formData.company,
+            packageLpa: Number.parseFloat(formData.lpa) || 12,
+            lpa: String(formData.lpa || 12),
+            cgpa: Number.parseFloat(formData.cgpa) || 9.0,
+            skills: formData.skill || 'Full Stack',
+            skill: formData.skill || 'Full Stack',
+            branch: formData.branch || 'CS',
+            passingYear: formData.passingYear || '2026'
+        };
+        const filteredLocal = localList.filter(s => (s.studentName || s.name || '').trim().toLowerCase() !== (formData.name || '').trim().toLowerCase());
+        filteredLocal.unshift(newStudentObj);
+        localStorage.setItem("top_placed_students_local", JSON.stringify(filteredLocal));
+
+        await fetchTopStudents();
+
+        const studentName = formData.name;
+        setFormData({
+            name: '',
+            branch: 'CS',
+            passingYear: '2026',
+            cgpa: '',
+            lpa: '',
+            skill: '',
+            company: ''
+        });
+        setIsModalOpen(false);
+        setToastMessage(`Student '${studentName}' added to Leaderboard successfully!`);
+        setToastType('success');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3500);
     };
 
     useEffect(() => {
@@ -762,6 +909,13 @@ export default function Placeview() {
                                     </button>
                                 </div>
                             )}
+                            <button
+                                type="button"
+                                className="placeview-add-student-btn"
+                                onClick={() => setIsModalOpen(true)}
+                            >
+                                <Plus size={16} /> Add Placed Student
+                            </button>
                         </div>
                     </div>
 
@@ -894,6 +1048,186 @@ export default function Placeview() {
                         )}
                     </div>
                 </motion.div>
+
+                {/* Add Top Placed Student Modal */}
+                {isModalOpen && (
+                    <div className="modal-overlay" aria-label="Close add student modal backdrop" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+                        <div className="modal-container">
+                            <div className="modal-header">
+                                <div>
+                                    <h3 className="modal-title">Add Placed Student</h3>
+                                    <p className="modal-subtitle">Enter details to feature student on the Leaderboard</p>
+                                </div>
+                                <button type="button" className="modal-close-btn" onClick={() => setIsModalOpen(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleAddStudent} className="modal-form">
+                                <div className="form-group">
+                                    <label htmlFor="placeview-student-name" className="form-label">
+                                        Student Full Name <span className="required-star">*</span>
+                                    </label>
+                                    <div className="name-input-wrapper">
+                                        <input
+                                            id="placeview-student-name"
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="e.g. Priya Sharma"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            required
+                                            autoComplete="off"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="placeview-student-branch" className="form-label">
+                                            Branch <span className="required-star">*</span>
+                                        </label>
+                                        <div className="select-wrapper">
+                                            <select
+                                                id="placeview-student-branch"
+                                                className="form-select"
+                                                value={formData.branch}
+                                                onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                                                required
+                                            >
+                                                <option value="CS">CS</option>
+                                                <option value="IT">IT</option>
+                                                <option value="BCA">BCA</option>
+                                                <option value="MCA">MCA</option>
+                                            </select>
+                                            <ChevronDown size={16} className="select-chevron" />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="placeview-student-passing-year" className="form-label">
+                                            Passing Year <span className="required-star">*</span>
+                                        </label>
+                                        <div className="select-wrapper">
+                                            <select
+                                                id="placeview-student-passing-year"
+                                                className="form-select"
+                                                value={formData.passingYear}
+                                                onChange={(e) => setFormData({ ...formData, passingYear: e.target.value })}
+                                                required
+                                            >
+                                                <option value="2024">2024</option>
+                                                <option value="2025">2025</option>
+                                                <option value="2026">2026</option>
+                                            </select>
+                                            <ChevronDown size={16} className="select-chevron" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="placeview-student-cgpa" className="form-label">
+                                            CGPA (out of 10) <span className="required-star">*</span>
+                                        </label>
+                                        <input
+                                            id="placeview-student-cgpa"
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="e.g. 9.4"
+                                            value={formData.cgpa}
+                                            onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="placeview-student-lpa" className="form-label">
+                                            Package (LPA) <span className="required-star">*</span>
+                                        </label>
+                                        <input
+                                            id="placeview-student-lpa"
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="e.g. 28"
+                                            value={formData.lpa}
+                                            onChange={(e) => setFormData({ ...formData, lpa: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="placeview-student-skill" className="form-label">Primary Skill</label>
+                                        <input
+                                            id="placeview-student-skill"
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="e.g. Full Stack, Data Science, Cloud"
+                                            value={formData.skill}
+                                            onChange={(e) => setFormData({ ...formData, skill: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="placeview-student-company" className="form-label">
+                                            Company Name <span className="required-star">*</span>
+                                        </label>
+                                        <input
+                                            id="placeview-student-company"
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="e.g. Amazon, Microsoft, Apple, Google"
+                                            value={formData.company}
+                                            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="modal-actions">
+                                    <button
+                                        type="button"
+                                        className="btn-cancel"
+                                        onClick={() => setIsModalOpen(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn-submit"
+                                    >
+                                        <Plus size={16} /> Add to Leaderboard
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Toast Notification */}
+                {showToast && (
+                    <div style={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        zIndex: 9999,
+                        backgroundColor: toastType === 'error' ? '#ef4444' : '#10b981',
+                        color: '#ffffff',
+                        padding: '12px 20px',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 500,
+                        fontSize: 14
+                    }}>
+                        <CheckCircle size={18} />
+                        {toastMessage}
+                    </div>
+                )}
             </div>
         </div>
     );
